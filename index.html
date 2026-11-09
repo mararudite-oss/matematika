@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matemātikas rūtiņas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ec; --surface:#ffffff; --ink:#1e2a3b; --muted:#66717f; --line:#e7ddcc;
+  --grid:#d3e2f1; --accent:#ff7a45; --accent-ink:#ffffff; --blue:#3d7bfd;
+  --ok:#1b9a5e; --ok-bg:#e2f5ea; --bad:#dc3f45; --bad-bg:#fde7e7;
+  --hl:#ffe7a1; --active:#fff3c4; --slot:#8fb0d6; --tip-bg:#ecf3ff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161b23; --surface:#202734; --ink:#eef2f7; --muted:#9ba7b7; --line:#323b4b;
+    --grid:#2b394d; --accent:#ff8a5c; --blue:#7ba4ff; --ok:#4fd393; --ok-bg:#1c3a2b;
+    --bad:#ff6b70; --bad-bg:#3e2225; --hl:#5c4b1a; --active:#4a4120; --slot:#4f6a8c; --tip-bg:#22304a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161b23; --surface:#202734; --ink:#eef2f7; --muted:#9ba7b7; --line:#323b4b;
+  --grid:#2b394d; --accent:#ff8a5c; --blue:#7ba4ff; --ok:#4fd393; --ok-bg:#1c3a2b;
+  --bad:#ff6b70; --bad-bg:#3e2225; --hl:#5c4b1a; --active:#4a4120; --slot:#4f6a8c; --tip-bg:#22304a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,-apple-system,sans-serif;font-size:18px;line-height:1.45}
+.wrap{max-width:800px;margin:0 auto;padding:10px 16px 90px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 14px;border-bottom:2px solid var(--line);margin-bottom:16px}
+header h1{font-size:22px;margin:0;flex:1;cursor:pointer;white-space:nowrap}
+.pill{background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:800;font-size:16px}
+.btn{font:inherit;font-weight:800;border:0;border-radius:14px;padding:10px 18px;cursor:pointer;background:var(--surface);color:var(--ink);border:2px solid var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 12px;font-size:15px;border-radius:10px}
+.btn:active{transform:scale(.97)}
+h2{font-size:24px;margin:6px 0 10px}
+.muted{color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tile{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tile:hover{border-color:var(--accent)}
+.tile .ico{font-size:34px}
+.tile .t{font-weight:800;font-size:19px;margin-top:4px}
+.tile .s{color:var(--muted);font-size:15px}
+.tile.wide{grid-column:1/-1}
+.hero{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+details.lesson{background:var(--tip-bg);border-radius:14px;padding:10px 14px;margin:8px 0 12px}
+details.lesson summary{cursor:pointer;font-weight:800}
+details.lesson ol,details.lesson ul{padding-left:22px;margin:8px 0}
+details.lesson li{margin:4px 0}
+.levels{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.chip{font:inherit;font-size:15px;font-weight:800;border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.task{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:14px 14px 16px;margin-bottom:14px}
+.task-kind{font-weight:800;color:var(--muted);text-transform:uppercase;font-size:13px;letter-spacing:.06em}
+.big-eq{font-size:30px;font-weight:800;margin:2px 0 8px;font-variant-numeric:tabular-nums}
+.story{font-size:19px;margin:6px 0 10px}
+.life{background:var(--ok-bg);border-radius:12px;padding:6px 12px;margin:4px 0 8px;font-size:16px}
+.sheet-scroll{overflow-x:auto;padding:6px 0 10px}
+.sheet{--cell:min(46px, calc((min(100vw, 800px) - 72px) / var(--cols)));display:grid;grid-template-columns:repeat(var(--cols),var(--cell));grid-auto-rows:var(--cell);width:max-content;margin:0 auto;background-color:var(--surface);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:var(--cell) var(--cell);border-right:1px solid var(--grid);border-bottom:1px solid var(--grid)}
+.cell{display:flex;align-items:center;justify-content:center;font-size:calc(var(--cell) * .62);font-weight:800;font-variant-numeric:tabular-nums;position:relative;user-select:none}
+.cell.sign{color:var(--muted)}
+.cell.pending{visibility:hidden}
+.cell.small{font-size:calc(var(--cell) * .36);color:var(--muted)}
+.cell.ul{box-shadow:inset 0 -3px 0 var(--ink)}
+.cell.inp{cursor:pointer}
+.cell.inp::before{content:'';position:absolute;inset:3px;border:2px dashed var(--slot);border-radius:7px;opacity:.55}
+.cell.inp.ok::before{display:none}
+.cell.ok{color:var(--ok)}
+.cell.hl{background:var(--hl)}
+.cell.active{background:var(--active)}
+.cell.active::before{border-style:solid;border-color:var(--accent);opacity:1;animation:pulse 1.1s infinite}
+.cell.bad{color:var(--bad);animation:shake .3s}
+.cell.fix{color:var(--bad)}
+.cell.fix::before{border-color:var(--bad);border-style:solid;opacity:.8}
+@keyframes pulse{50%{transform:scale(.88)}}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.carry{display:none;margin:4px auto 0;width:max-content;background:var(--tip-bg);border-radius:999px;padding:3px 14px;font-weight:800}
+.carry.show{display:block}
+.hint{background:var(--tip-bg);border-radius:14px;padding:10px 14px;margin-top:10px;min-height:46px}
+.hint.err{background:var(--bad-bg)}
+.hint.okk{background:var(--ok-bg)}
+.hint .owl{margin-right:6px}
+.log{margin-top:8px}
+.log-line{color:var(--ok);font-size:15px;padding:2px 0}
+.log-line+.log-line{opacity:.6}
+.log-line+.log-line+.log-line{opacity:.35}
+.row-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.keypad{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;margin-top:12px}
+.key{font:inherit;font-size:24px;font-weight:800;height:54px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.key:active{background:var(--hl)}
+.key.enter{grid-column:span 2;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:18px}
+.key.var{color:var(--blue);font-style:italic}
+.q{font-weight:800;font-size:20px;margin:10px 0 6px}
+.expr-box{min-height:58px;border:3px solid var(--slot);border-radius:14px;padding:8px 14px;font-size:28px;font-weight:800;background:var(--bg);display:flex;align-items:center;flex-wrap:wrap}
+.expr-box .ph{color:var(--muted);font-size:18px;font-weight:600}
+.caret{display:inline-block;width:3px;height:30px;background:var(--accent);margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.paper{background-color:var(--surface);background-image:linear-gradient(var(--grid) 1px,transparent 1px);background-size:100% 34px;border:2px solid var(--grid);border-radius:10px;padding:2px 14px;margin:8px 0;font-size:21px;font-weight:800;line-height:34px;font-variant-numeric:tabular-nums;min-height:38px}
+.paper .why{display:block;font-size:15px;font-weight:600;color:var(--muted);line-height:20px;margin:-4px 0 8px}
+.paper .check{color:var(--ok)}
+.paper .wrongline{color:var(--bad)}
+.mc-opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font:inherit;font-size:20px;font-weight:800;padding:10px 16px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.opt.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.opt:disabled{cursor:default}
+.result{margin-top:12px;font-size:20px;text-align:center}
+.done-banner{background:var(--ok-bg);border-radius:18px;padding:16px;text-align:center;margin-bottom:14px}
+.done-banner .big{font-size:40px}
+.done-banner .btn{margin-top:10px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.topbar h2{margin:0;flex:1}
+table.res{width:100%;border-collapse:collapse;margin:10px 0;font-size:16px}
+table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+table.res td.c{text-align:center}
+.tag{display:inline-block;border-radius:8px;padding:1px 8px;font-weight:800;font-size:14px}
+.tag.g{background:var(--ok-bg);color:var(--ok)}
+.tag.y{background:var(--hl);color:var(--ink)}
+.tag.r{background:var(--bad-bg);color:var(--bad)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:10px 14px;cursor:pointer;font:inherit;color:inherit;text-align:left;width:100%}
+.item:hover{border-color:var(--accent)}
+.item .e{flex:1;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
+.item .src{font-size:13px;color:var(--muted)}
+.progress{font-weight:800;color:var(--muted);margin-bottom:8px}
+@media (max-width:480px){ .big-eq{font-size:25px} header h1{font-size:19px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="home">🧮 Matemātikas rūtiņas</h1>
+    <span class="pill" id="stars">⭐ 0</span>
+    <button class="btn small" id="learnBtn"></button>
+  </header>
+  <main id="main"></main>
+</div>
+<script>
+/* ================= palīgfunkcijas ================= */
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function btn(txt,cls,fn){const b=el('button','btn '+(cls||''),txt);b.onclick=fn;return b;}
+const store={
+  get(k,d){try{const v=localStorage.getItem('mrut_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('mrut_'+k,JSON.stringify(v));}catch(e){}}
+};
+const S={stars:store.get('stars',0),learn:store.get('learn',true),solved:store.get('solved',{}),done:store.get('done',{}),tests:store.get('tests',[])};
+function save(){store.set('stars',S.stars);store.set('learn',S.learn);store.set('solved',S.solved);store.set('done',S.done);store.set('tests',S.tests);}
+function refreshHeader(){$('#stars').textContent='⭐ '+S.stars;$('#learnBtn').textContent=S.learn?'🦉 Padomi: ieslēgti':'🦉 Padomi: izslēgti';}
+$('#learnBtn').onclick=()=>{S.learn=!S.learn;save();refreshHeader();};
+$('#home').onclick=()=>viewHome();
+
+/* tastatūra: viens aktīvais saņēmējs */
+const KEYS={h:null};
+document.addEventListener('keydown',e=>{
+  if(!KEYS.h||e.metaKey||e.ctrlKey||e.altKey)return;
+  const m={'Backspace':'⌫','Enter':'⏎','*':'·','/':':','-':'−','x':'x'};
+  let k=m[e.key]||(e.key.length===1?e.key.toLowerCase():null);
+  if(!k)return;
+  if(KEYS.h(k)!==false)e.preventDefault();
+});
+function makeKeypad(layout,handler,varLetter){
+  const k=el('div','keypad');
+  layout.forEach(key=>{
+    const b=el('button','key'+(key==='⏎'?' enter':'')+(key===varLetter?' var':''),key==='⏎'?'Pārbaudīt':key);
+    b.onclick=()=>handler(key);k.appendChild(b);
+  });
+  return k;
+}
+const DIGITS=['1','2','3','4','5','6','7','8','9','0','⌫'];
+const PL_DAT=['vieniem','desmitiem','simtiem','tūkstošiem','desmittūkstošiem','simttūkstošiem','miljoniem','desmitmiljoniem'];
+const PL_GEN=['vienu','desmitu','simtu','tūkstošu','desmittūkstošu','simttūkstošu','miljonu','desmitmiljonu'];
+
+/* ================= rūtiņu lapa ================= */
+class Sheet{
+  constructor(cols){this.cols=cols;this.rows=[];this.steps=[];}
+  row(){this.rows.push(Array.from({length:this.cols},()=>({t:''})));return this.rows.length-1;}
+  txt(r,c,t,cls){const x=this.rows[r][c];x.t=t;x.cls=cls||'';}
+  inp(r,c,exp,step){const x=this.rows[r][c];x.inp=true;x.exp=String(exp);this.steps.push(Object.assign({r,c,exp:String(exp)},step));}
+  ul(r,c1,c2){for(let c=c1;c<=c2;c++)this.rows[r][c].ul=true;}
+}
+
+/* --- reizināšana rakstos --- */
+function buildMul(a,b){
+  if(String(b).length>String(a).length)[a,b]=[b,a];
+  const A=String(a),B=String(b),P=String(a*b);
+  const parts=[];[...B].reverse().forEach((ch,i)=>{const d=+ch;if(d)parts.push({d,shift:i,val:a*d});});
+  const W=Math.max(A.length,B.length,P.length,...parts.map(p=>String(p.val).length+p.shift));
+  const cols=W+1,col=k=>cols-1-k;
+  const sh=new Sheet(cols);
+  const rA=sh.row();[...A].forEach((ch,i)=>sh.txt(rA,col(A.length-1-i),ch));
+  const rB=sh.row();sh.txt(rB,0,'·','sign');[...B].forEach((ch,i)=>sh.txt(rB,col(B.length-1-i),ch));
+  sh.ul(rB,1,cols-1);
+  const Ad=[...A].reverse().map(Number);
+  const single=parts.length===1;
+  let prevShift=-1;
+  parts.forEach((p,j)=>{
+    const r=sh.row();if(j===1)sh.txt(r,0,'+','sign');
+    let intro='';
+    if(j===0){
+      intro=p.shift===0?`Sāc ar apakšējā skaitļa pēdējo ciparu ${p.d} — ar to reizini katru augšējā skaitļa ciparu, sākot no labās puses. `
+        :`Apakšējā skaitļa beigās ir ${p.shift===1?'0':'nulles'}. Reizinot ar 0, sanāk 0, tāpēc sāc ar ciparu ${p.d} un raksti zem ${PL_DAT[p.shift]}. `;
+    }else{
+      const skipped=p.shift-prevShift-1;
+      intro=(skipped>0?`Apakšējā skaitlī ir 0 — reizinot ar 0, sanāk 0, tāpēc šo rindu izlaižam. `:'')+
+        `Tagad reizini ar ${p.d} (${PL_GEN[p.shift]} cipars). Pirmo ciparu raksti zem ${PL_DAT[p.shift]} — ${skipped>0?'divas rūtiņas':'vienu rūtiņu'} pa kreisi, salīdzinot ar iepriekšējo rindu. `;
+    }
+    let carry=0;
+    Ad.forEach((ad,k)=>{
+      const prod=ad*p.d,s=prod+carry,last=k===Ad.length-1;
+      const hl=[[rA,col(k)],[rB,col(p.shift)]];
+      const ask=(k===0?intro:'')+`Reizini ${ad} · ${p.d}`+(carry?` un pieskaiti ${carry} no atmiņas.`:'.');
+      let ex=`${ad} · ${p.d} = ${prod}`+(carry?`, ${prod} + ${carry} = ${s}`:'');
+      if(last&&s>=10)ex+=`. Šis ir pēdējais augšējā skaitļa cipars, tāpēc raksti visu ${s}: vispirms ${s%10}.`;
+      else ex+=`. Raksti ${s%10}`+(s>=10?`, bet ${Math.floor(s/10)} paturi atmiņā.`:'.');
+      sh.inp(r,col(k+p.shift),s%10,{ask,ex,hl,carry:carry||null});
+      carry=Math.floor(s/10);
+      if(last&&carry)sh.inp(r,col(k+1+p.shift),carry,{ask:`Atmiņā vēl ir ${carry}. Kur to raksti?`,ex:`Atmiņā palikušo ${carry} raksti priekšā — rinda gatava!`,hl:[],carry});
+    });
+    if(single&&p.shift>0){
+      for(let z=p.shift-1;z>=0;z--)sh.inp(r,col(z),0,{ask:`Apakšējā skaitļa beigās ir 0. Ko pieraksti rezultāta beigās?`,ex:`Pieraksti 0 — rezultāta beigās ir tik nuļļu, cik reizinātāja beigās.`,hl:[[rB,col(z)]]});
+    }
+    prevShift=p.shift;p.row=r;p.len=String(p.val).length;
+    if(!single&&j===parts.length-1)sh.ul(r,1,cols-1);
+  });
+  if(!single){
+    const r=sh.row();let carry=0;
+    for(let k=0;k<P.length;k++){
+      const ds=[],hl=[];
+      parts.forEach(p=>{if(k>=p.shift&&k<p.shift+p.len){ds.push(+String(p.val)[p.len-1-(k-p.shift)]);hl.push([p.row,col(k)]);}});
+      const s=ds.reduce((x,y)=>x+y,0)+carry;
+      const ask=(k===0?'Visas rindas uzrakstītas — tagad tās saskaiti, sākot no labās puses! ':'')+`Saskaiti ${PL_GEN[k]} kolonnu`+(carry?` un neaizmirsti ${carry} no atmiņas.`:'.');
+      let ex;
+      if(!ds.length&&!carry)ex='Šajā kolonnā augšā nekā nav — raksti 0.';
+      else if(!ds.length)ex=`Kolonnā ir tikai ${carry} no atmiņas — raksti ${carry}.`;
+      else if(ds.length===1&&!carry)ex=`Šajā kolonnā ir tikai ${ds[0]} — noraksti to lejā.`;
+      else ex=`${ds.join(' + ')}${carry?` + ${carry} (no atmiņas)`:''} = ${s}. Raksti ${s%10}`+(s>=10?`, bet ${Math.floor(s/10)} paturi atmiņā.`:'.');
+      sh.inp(r,col(k),s%10,{ask,ex,hl,carry:carry||null});
+      carry=Math.floor(s/10);
+    }
+  }
+  sh.result=`${a} · ${b} = ${a*b}`;
+  sh.check=`Pārbaude: ${a*b} : ${b} = ${a} ✓`;
+  return sh;
+}
+
+/* --- dalīšana stūrītī --- */
+function buildDiv(D,q){
+  const Sd=String(D),Q=String(q),n=Sd.length,quot=Math.floor(D/q),rem=D%q,RS=String(rem);
+  let k=0,curStr=Sd[0];while(+curStr<q&&k<n-1){k++;curStr+=Sd[k];}
+  const qlen=n-k,qStart=1+n+1+Q.length+1;
+  const cols=qStart+qlen+(rem?1+RS.length:0);
+  const sh=new Sheet(cols);const top=sh.row();
+  [...Sd].forEach((ch,i)=>sh.txt(top,1+i,ch));
+  sh.txt(top,1+n,':','sign');[...Q].forEach((ch,i)=>sh.txt(top,2+n+i,ch));sh.txt(top,2+n+Q.length,'=','sign');
+  if(rem)sh.txt(top,qStart+qlen,'atl.','small');
+  const qcells=[...Q].map((_,i)=>[top,2+n+i]);
+  let end=k,curRow=top,qi=0,first=true,note='';
+  const curCols=()=>{const a=[];for(let i=0;i<curStr.length;i++)a.push([curRow,1+end-curStr.length+1+i]);return a;};
+  while(true){
+    const cur=+curStr,d=Math.floor(cur/q),prod=d*q,r=cur-prod;
+    let ask=note;note='';
+    if(first){ask+=k>0?`Pirmais nepilnais dalāmais: ${Sd.slice(0,k)} ir mazāks par ${q}, tāpēc ņemam ${curStr}. Dalījumā būs ${qlen} cipari (tukšās rūtiņas aiz =). `:`Pirmais nepilnais dalāmais ir ${curStr}. Dalījumā būs ${qlen} cipari. `;first=false;}
+    ask+=`Cik reizes ${q} ietilpst ${cur}?`;
+    if(q>=20){const r10=Math.round(q/10)*10;if(r10!==q&&r10%100!==0)ask+=` Padoms: ${q} ir apmēram ${r10}.`;}
+    const ex=d===0?`${cur} ir mazāks par ${q}, tātad ${q} tajā ietilpst 0 reizes. Dalījumā raksti 0 — to nedrīkst aizmirst!`
+      :`${q} · ${d} = ${prod}`+(d<9?`, bet ${q} · ${d+1} = ${(d+1)*q} — tas jau ir vairāk nekā ${cur}`:'')+`. Tātad dalījumā raksti ${d}.`;
+    sh.inp(top,qStart+qi,d,{ask,ex,hl:[...curCols(),...qcells]});
+    if(d>0){
+      const pr=sh.row(),PS=String(prod),pEnd=1+end,pStart=pEnd-PS.length+1;
+      const cc=curCols();
+      sh.txt(pr,Math.min(pStart,cc[0][1])-1,'−','sign');
+      [...PS].forEach((ch,i)=>sh.inp(pr,pStart+i,ch,{
+        ask:i===0?`Reizini ${q} · ${d} un raksti rezultātu zem ${cur} (pēdējo ciparu zem pēdējā).`:`Turpini rakstīt ${prod}.`,
+        ex:`${q} · ${d} = ${prod}. Šajā rūtiņā raksti ${ch}.`,hl:[...qcells,[top,qStart+qi]]}));
+      sh.ul(pr,cc[0][1],pEnd);
+      const rr=sh.row(),hasMore=end<n-1;
+      const prodCells=PS.split('').map((_,i)=>[pr,pStart+i]);
+      if(r>0||!hasMore){
+        const R2=String(r);
+        [...R2].forEach((ch,i)=>sh.inp(rr,pEnd-R2.length+1+i,ch,{
+          ask:i===0?`Atņem: ${cur} − ${prod}.`:'Turpini rakstīt starpību.',
+          ex:`${cur} − ${prod} = ${r}. Šajā rūtiņā raksti ${ch}.`+(i===R2.length-1?` (${r} ir mazāks par ${q} — tā tam jābūt.)`:''),
+          hl:[...cc,...prodCells]}));
+        curStr=R2;
+      }else{curStr='';note=`${cur} − ${prod} = 0 (nulli šeit var nerakstīt). `;}
+      curRow=rr;
+    }
+    if(end<n-1){
+      end++;const ch=Sd[end],ns=curStr+ch;
+      sh.inp(curRow,1+end,ch,{ask:note+'Nones lejā nākamo dalāmā ciparu.',ex:`Nākamais dalāmā cipars ir ${ch} — noraksti to blakus. Tagad ir ${+ns}.`,hl:[[top,1+end]]});
+      note='';curStr=ns;qi++;
+    }else break;
+  }
+  if(rem)[...RS].forEach((ch,i)=>sh.inp(top,qStart+qlen+1+i,ch,{ask:i===0?'Dalāmā cipari beigušies. Kas ir atlikums?':'Turpini rakstīt atlikumu.',ex:`Beigās palika ${rem} — tas ir atlikums. Raksti ${ch}.`,hl:curCols()}));
+  sh.result=`${D} : ${q} = ${quot}`+(rem?` (atl. ${rem})`:'');
+  sh.check=`Pārbaude: ${quot} · ${q}${rem?` + ${rem}`:''} = ${D} ✓`;
+  return sh;
+}
+
+/* --- lapas attēlošana: 'guided' (soli pa solim) vai 'free' (kā pārbaudes darbā) --- */
+function mountSheet(sh,host,mode,onDone){
+  const wrap=el('div');
+  const g=el('div','sheet');g.style.setProperty('--cols',sh.cols);
+  const els=sh.rows.map(row=>row.map(cell=>{
+    const d=el('div','cell'+(cell.cls?' '+cell.cls:'')+(cell.ul?' ul':'')+(cell.inp?' inp':''),cell.inp?'':cell.t);
+    g.appendChild(d);return d;}));
+  const scroller=el('div','sheet-scroll');scroller.appendChild(g);
+  const carry=el('div','carry'),hint=el('div','hint'),log=el('div','log'),bar=el('div','row-actions');
+  wrap.append(scroller,carry,hint);
+  const steps=sh.steps;let i=0,mistakes=0,hints=0,finished=false,cur=0;const vals=[];
+  const kp=makeKeypad(DIGITS,key);
+  wrap.append(kp,bar,log);host.appendChild(wrap);
+  const clear=()=>g.querySelectorAll('.hl,.active').forEach(x=>x.classList.remove('hl','active'));
+  const rowFirst={};steps.forEach((s,idx)=>{if(!(s.r in rowFirst))rowFirst[s.r]=idx;});
+  const reveal=()=>sh.rows.forEach((_,r)=>{const hide=mode==='guided'&&r in rowFirst&&rowFirst[r]>i;els[r].forEach(d=>d.classList.toggle('pending',hide));});
+  function activate(){
+    clear();reveal();const s=steps[i];els[s.r][s.c].classList.add('active');
+    (s.hl||[]).forEach(([r,c])=>els[r][c].classList.add('hl'));
+    carry.textContent=s.carry?`Atmiņā: ${s.carry}`:'';carry.classList.toggle('show',!!s.carry);
+    hint.className='hint';
+    hint.innerHTML='<span class="owl">🦉</span>'+esc(S.learn?s.ask:'Raksti ciparu iezīmētajā rūtiņā. Ja nezini — spied „Padoms”.');
+  }
+  function showEx(isTip){const s=steps[i];hint.className='hint '+(isTip?'':'err');hint.innerHTML=`<span class="owl">${isTip?'💡':'🤔'}</span>`+esc((isTip?'':'Ne gluži. ')+s.ex);}
+  function addLog(t){log.prepend(el('div','log-line','✓ '+t));while(log.children.length>3)log.lastChild.remove();}
+  function finish(){
+    finished=true;clear();carry.classList.remove('show');KEYS.h=null;kp.remove();bar.remove();
+    hint.className='hint okk';hint.innerHTML='🎉 Gatavs! Visi raksti ir pareizi.';
+    onDone({mistakes,hints});
+  }
+  function key(k){
+    if(finished)return false;
+    if(mode==='free')return freeKey(k);
+    if(!/^\d$/.test(k))return false;
+    const s=steps[i],c=els[s.r][s.c];
+    if(k===s.exp){c.textContent=k;c.classList.remove('active','bad');c.classList.add('ok');addLog(s.ex);i++;if(i>=steps.length)return finish();activate();}
+    else{mistakes++;c.textContent=k;c.classList.remove('bad');void c.offsetWidth;c.classList.add('bad');
+      setTimeout(()=>{if(!c.classList.contains('ok')){c.textContent='';c.classList.remove('bad');}},700);showEx(false);}
+  }
+  function sel(idx){clear();cur=idx;const s=steps[idx];els[s.r][s.c].classList.add('active');}
+  function freeKey(k){
+    const s=steps[cur],c=els[s.r][s.c];
+    if(/^\d$/.test(k)){vals[cur]=k;c.textContent=k;if(cur<steps.length-1)sel(cur+1);}
+    else if(k==='⌫'){if(!vals[cur]&&cur>0)sel(cur-1);const s2=steps[cur];vals[cur]='';els[s2.r][s2.c].textContent='';}
+    else if(k==='⏎')submit();
+    else return false;
+  }
+  function submit(){
+    finished=true;clear();KEYS.h=null;kp.remove();bar.remove();let ok=true;
+    steps.forEach((s,idx)=>{const c=els[s.r][s.c];if(vals[idx]===s.exp)c.classList.add('ok');else{ok=false;c.classList.add('fix');c.textContent=s.exp;}});
+    hint.className='hint '+(ok?'okk':'err');
+    hint.innerHTML=ok?'✅ Viss pareizi!':'❌ Ir kļūdas. Sarkanie cipari rāda, kam bija jābūt.';
+    onDone({ok});
+  }
+  if(mode==='guided'){
+    bar.appendChild(btn('💡 Padoms','small',()=>{if(!finished){hints++;showEx(true);}}));
+    activate();
+  }else{
+    steps.forEach((s,idx)=>els[s.r][s.c].addEventListener('click',()=>{if(!finished)sel(idx);}));
+    hint.innerHTML='<span class="owl">✍️</span>Aizpildi visas rūtiņas (var uzklikšķināt uz jebkuras) un spied „Iesniegt”.';
+    bar.appendChild(btn('Iesniegt','primary',submit));sel(0);
+  }
+  KEYS.h=key;
+}
+
+/* ================= izteiksmes ================= */
+function toJs(s,v){
+  s=String(s).replace(/·|×|\*/g,'*').replace(/:|÷|\//g,'/').replace(/−|–/g,'-').replace(/\s+/g,'').toLowerCase();
+  if(!s)return{err:'Uzraksti izteiksmi.'};
+  if(!/^[0-9a-z+\-*/().]*$/.test(s))return{err:'Izteiksmē ir neatļauts simbols.'};
+  const letters=s.match(/[a-z]/g)||[];
+  if(letters.some(l=>l!==v))return{err:`Šajā uzdevumā nezināmais ir burts ${v}.`};
+  s=s.replace(/(\d)([a-z(])/g,'$1*$2').replace(/([a-z)])(?=[0-9a-z(])/g,'$1*');
+  try{const f=new Function(v,'return ('+s+');');const t=f(3);if(typeof t!=='number')throw 0;return{f};}
+  catch(e){return{err:'Izteiksme nav pabeigta — pārbaudi zīmes un iekavas.'};}
+}
+function same(f,g){return [2,3,5,7,12].every(t=>{const a=f(t),b=g(t);return isFinite(a)&&isFinite(b)&&Math.abs(a-b)<1e-9;});}
+const pretty=a=>String(a).replace(/\s/g,'').replace(/\*/g,'·').replace(/\//g,':').replace(/-/g,'−').replace(/([+−·:])/g,' $1 ');
+const NUMW={2:'Divi',3:'Trīs',4:'Četri',5:'Pieci',6:'Seši'};
+
+const EXPR=[
+  (o={})=>{const p=o.p??pick([8,10,12,15,18,20]),n=o.n??rnd(2,5),m=o.m??rnd(2,5),v=o.v??pick(['a','c','p']);return{
+    text:`Zīmulis maksā ${p} centus, bet pildspalva ${v} centus. Cik centu maksā ${n} zīmuļi un ${m} pildspalvas?`,v,steps:[
+    {q:`Cik centu maksā ${n} zīmuļi?`,a:`${n}*${p}`,why:`Viens zīmulis ${p} c, ${n} zīmuļi — ${n} reizes pa ${p}: ${n} · ${p}.`,hint:'Vairāki vienādi zīmuļi — kura darbība?',traps:[{e:`${n}+${p}`,m:`Nevis saskaiti — ${n} zīmuļi pa ${p} centiem ir reizināšana.`}]},
+    {q:`Cik centu maksā ${m} pildspalvas?`,a:`${m}*${v}`,why:`Viena pildspalva ${v} c, tātad ${m} pildspalvas: ${m} · ${v}.`,hint:`Burts ${v} ir vienas pildspalvas cena. Ar to rīkojies tāpat kā ar skaitli.`,traps:[{e:`${m}+${v}`,m:`${m} pildspalvas pa ${v} centiem — tā ir reizināšana: ${m} · ${v}.`}]},
+    {q:'Cik centu maksā viss kopā?',a:`${n}*${p}+${m}*${v}`,why:`„Kopā” — saskaiti abas daļas: ${n} · ${p} + ${m} · ${v}.`,hint:'„Kopā” — saskaiti abu iepriekšējo atbilžu izteiksmes.',traps:[{e:`${p}+${v}`,m:`Tā ir tikai viena zīmuļa un vienas pildspalvas cena. Vajag ${n} zīmuļus un ${m} pildspalvas.`}]}]};},
+  (o={})=>{const s=o.s??rnd(45,95),nm=o.nm??pick(['Sandis','Elza','Marta','Roberts']),v=o.v??pick(['v','t']);return{
+    text:`${nm} vienā stundā nobrauca ${s} km. Cik kilometru ${nm} nobrauks ${v} stundās, ja brauks ar tādu pašu ātrumu?`,v,steps:[
+    {q:`Cik kilometru nobrauks ${v} stundās?`,a:`${s}*${v}`,why:`Katrā stundā ${s} km. 2 stundās būtu ${s} · 2, 3 stundās ${s} · 3, tātad ${v} stundās — ${s} · ${v}.`,hint:'Iedomājies: cik km būtu 2 stundās? Un 3 stundās? Kura darbība?',
+     traps:[{e:`${s}+${v}`,m:`Ne + : katrā stundā ${s} km, tātad ${v} reizes pa ${s} — reizini.`},{e:`${s}/${v}`,m:'Dalīt nevajag — jo vairāk stundu, jo vairāk kilometru. Reizini.'}]}]};},
+  (o={})=>{const k=o.k??pick([2,3,4,5]),one=o.one??rnd(15,40),P=k*one,v=o.v??pick(['b','c','y']);return{
+    text:`${NUMW[k]} āboli maksā ${P} centus, bet ${k} bumbieri maksā ${v} centus. Cik centu maksā viens ābols un viens bumbieris kopā?`,v,steps:[
+    {q:'Cik centu maksā viens ābols?',a:`${P}/${k}`,why:`${k} āboli maksā ${P} c, tātad viens — ${k} reizes mazāk: ${P} : ${k}.`,hint:`Viens ābols ir lētāks nekā ${k} āboli kopā. Kura darbība dod mazāk?`,
+     traps:[{e:`${P}*${k}`,m:`Viens ābols ir lētāks nekā ${k} āboli — tāpēc dali, nevis reizini.`},{e:`${P}-${k}`,m:`Vienu no ${k} vienādām daļām atrod ar dalīšanu: ${P} : ${k}.`}]},
+    {q:'Cik centu maksā viens bumbieris?',a:`${v}/${k}`,why:`${k} bumbieri maksā ${v} c, viens — ${v} : ${k}.`,hint:'Tieši tāpat kā ar ābolu, tikai cenas vietā ir burts.',
+     traps:[{e:`${v}*${k}`,m:`Viens bumbieris ir lētāks nekā ${k} — dali!`},{e:v,m:`${v} centi ir ${k} bumbieru cena. Vienam bumbierim — ${v} : ${k}.`}]},
+    {q:'Cik centu maksā viens ābols un viens bumbieris kopā?',a:`${P}/${k}+${v}/${k}`,why:`„Kopā” — saskaiti: ${P} : ${k} + ${v} : ${k}.`,hint:'Saskaiti abu iepriekšējo atbilžu izteiksmes.',
+     traps:[{e:`${P}+${v}`,m:`Tā ir ${k} ābolu un ${k} bumbieru cena. Vajag viena ābola un viena bumbiera cenu.`}]}]};},
+  (o={})=>{const pp=o.pp??pick([60,65,70,75,80,85]),M=o.M??pick([90,100,120,150]),nm=o.nm??pick(['Mārcim','Annai','Jānim','Lienei']);return{
+    text:`Ābols maksā x centus, bet bumbieris ${pp} centus. ${nm} ir ${M} centi.`,v:'x',steps:[
+    {q:'Cik centu maksā 5 āboli?',a:'5*x',why:'Pieci āboli pa x centiem: 5 · x.',traps:[{e:'5+x',m:'5 āboli pa x centiem — reizini: 5 · x.'}]},
+    {q:'Par cik centiem bumbieris dārgāks nekā ābols?',a:`${pp}-x`,why:`„Par cik” — starpība: no lielākā atņem mazāko: ${pp} − x.`,hint:'„Par cik vairāk / mazāk” vienmēr ir atņemšana.',
+     traps:[{e:`x-${pp}`,m:`Bumbieris ir dārgāks, tāpēc atņem no bumbiera cenas: ${pp} − x.`},{e:`${pp}/x`,m:'„Par cik” nozīmē atņemšanu, bet „cik reižu” — dalīšanu.'}]},
+    {q:'Cik reižu ābols lētāks nekā bumbieris?',a:`${pp}/x`,why:`„Cik reižu” — dalīšana; lielāko dala ar mazāko: ${pp} : x.`,hint:'„Cik reižu vairāk / mazāk” vienmēr ir dalīšana.',
+     traps:[{e:`${pp}-x`,m:'„Cik reižu” nozīmē dalīšanu, nevis atņemšanu.'},{e:`x/${pp}`,m:`Dala lielāko ar mazāko: ${pp} : x.`}]},
+    {q:'Cik centu atliek, ja nopērk vienu ābolu?',a:`${M}-x`,why:`No ${M} centiem atņem ābola cenu: ${M} − x.`,hint:'„Atliek” — no visas naudas atņem to, ko iztērēja.'},
+    {q:'Cik centu maksā 3 āboli un bumbieris?',a:`3*x+${pp}`,why:`3 āboli — 3 · x, un vēl bumbieris: 3 · x + ${pp}.`,hint:'Vispirms 3 āboli, tad pieskaiti bumbieri.',
+     traps:[{e:`3*(x+${pp})`,m:`Bumbieris ir tikai viens! Ar 3 reizini tikai ābolu: 3 · x + ${pp}.`},{e:`3+x+${pp}`,m:'3 āboli pa x centiem ir 3 · x, nevis 3 + x.'}]},
+    {q:'Cik centu atliek, ja pērk 2 ābolus?',a:`${M}-2*x`,why:`2 āboli maksā 2 · x; no ${M} atņem: ${M} − 2 · x.`,hint:'Vispirms padomā, cik maksā 2 āboli, tad atņem no visas naudas.',
+     traps:[{e:`${M}-x`,m:'Ābolu ir divi — tie maksā 2 · x.'},{e:`(${M}-x)*2`,m:`Atņem abu ābolu cenu: ${M} − 2 · x.`}]},
+    {q:`Cik ābolu var nopirkt par ${M} centiem?`,a:`${M}/x`,why:`Cik reizes x ietilpst ${M}? Tātad ${M} : x.`,hint:'Cik reizes ābola cena ietilpst visā naudā?',
+     traps:[{e:`${M}-x`,m:'Jautā „cik ābolu” — cik reizes cena ietilpst naudā: dali.'},{e:`${M}*x`,m:`Reizinot sanāk vēl vairāk naudas, nevis ābolu skaits. Dali: ${M} : x.`}]}]};},
+  ()=>{const N=pick([120,150,180,200,240]),d=rnd(2,6);return{
+    text:`Grāmatā ir ${N} lappuses. Elza katru dienu izlasa n lappuses. Cik lappušu vēl jāizlasa pēc ${d} dienām?`,v:'n',steps:[
+    {q:`Cik lappušu Elza izlasa ${d} dienās?`,a:`${d}*n`,why:`Katru dienu n lappuses, ${d} dienās — ${d} · n.`,traps:[{e:`${d}+n`,m:`${d} dienas pa n lappusēm — reizini.`}]},
+    {q:'Cik lappušu vēl jāizlasa?',a:`${N}-${d}*n`,why:`No visām ${N} lappusēm atņem izlasītās: ${N} − ${d} · n.`,hint:'No visām lappusēm atņem izlasītās.',traps:[{e:`${N}-n`,m:`Viņa lasīja ${d} dienas, nevis vienu — atņem ${d} · n.`}]}]};},
+  ()=>{const N=rnd(25,48),m=rnd(4,12);return{
+    text:`Autobusā bija ${N} pasažieri. Pieturā izkāpa x pasažieri, bet iekāpa ${m}. Cik pasažieru tagad ir autobusā?`,v:'x',steps:[
+    {q:'Cik pasažieru palika, kad daži izkāpa?',a:`${N}-x`,why:`Izkāpa — atņem: ${N} − x.`},
+    {q:'Cik pasažieru ir tagad?',a:`${N}-x+${m}`,why:`Iekāpa — pieskaiti: ${N} − x + ${m}.`,traps:[{e:`${N}-x-${m}`,m:'Iekāpušie autobusā ir klāt — tos pieskaita.'},{e:`${N}+x-${m}`,m:'Izkāpa x (atņem), iekāpa — pieskaita.'}]}]};},
+  ()=>{const k=rnd(3,9),n=pick([12,15,18,20,24,25]);return{
+    text:`Veikalā atveda ${k} kastes ar ${n} āboliem katrā un vēl maisu ar y āboliem. Cik ābolu atveda kopā?`,v:'y',steps:[
+    {q:`Cik ābolu ir ${k} kastēs?`,a:`${k}*${n}`,why:`${k} kastes pa ${n} āboliem: ${k} · ${n}.`,traps:[{e:`${k}+${n}`,m:`Katrā kastē ${n} āboli, kastu ir ${k} — reizini.`}]},
+    {q:'Cik ābolu atveda kopā?',a:`${k}*${n}+y`,why:`Kastes plus maiss: ${k} · ${n} + y.`}]};},
+  ()=>{const M=pick([20,30,40,50]),k=rnd(2,4);return{
+    text:`Mammai bija ${M} eiro. Viņa nopirka ${k} grāmatas, katra maksāja c eiro. Cik eiro mammai palika?`,v:'c',steps:[
+    {q:`Cik eiro maksāja ${k} grāmatas?`,a:`${k}*c`,why:`${k} grāmatas pa c eiro: ${k} · c.`},
+    {q:'Cik eiro palika?',a:`${M}-${k}*c`,why:`No ${M} atņem iztērēto: ${M} − ${k} · c.`,traps:[{e:`${M}-c`,m:`Grāmatu bija ${k} — iztērēja ${k} · c.`}]}]};},
+  ()=>{const n=pick([24,30,36,48,60]);return{
+    text:`Nometnē ir ${n} bērni. Viņus sadala vienādās grupās pa m bērniem katrā. Cik grupu sanāk?`,v:'m',steps:[
+    {q:'Cik grupu sanāk?',a:`${n}/m`,why:`Cik reizes m ietilpst ${n}? ${n} : m.`,hint:'Sadala vienādās daļās — kura darbība?',traps:[{e:`${n}-m`,m:'Sadalīšana vienādās grupās ir dalīšana.'},{e:`${n}*m`,m:'Grupu ir mazāk nekā bērnu — dali.'}]}]};},
+  ()=>{const s=pick([60,70,80,90]),d=rnd(15,45);return{
+    text:`Vilciens t stundas brauca ar ātrumu ${s} km stundā, pēc tam vēl ${d} km. Cik kilometru vilciens nobrauca kopā?`,v:'t',steps:[
+    {q:'Cik km vilciens nobrauca t stundās?',a:`${s}*t`,why:`Katrā stundā ${s} km, t stundās — ${s} · t.`,traps:[{e:`${s}+t`,m:'Katru stundu pa ' +s+' km — reizini.'}]},
+    {q:'Cik km nobrauca kopā?',a:`${s}*t+${d}`,why:`Pieskaiti vēl ${d} km: ${s} · t + ${d}.`}]};},
+];
+function genExpr(){const i=rnd(0,EXPR.length-1);return Object.assign({kind:'expr'},EXPR[i]());}
+
+function exprInput(v,onSubmit){
+  const box=el('div','expr-box');let s='';
+  const render=()=>{box.innerHTML=(s?esc(s.replace(/([+−·:])/g,' $1 ')):'<span class="ph">Raksti izteiksmi ar pogām vai tastatūru…</span>')+'<span class="caret"></span>';};
+  const key=k=>{
+    if(k==='⏎'){onSubmit(s);return;}
+    if(k==='⌫'){s=s.slice(0,-1);}
+    else if(/^\d$/.test(k)||['+','−','·',':','(',')'].includes(k)||k===v)s+=k;
+    else if(k==='x'&&v!=='x')s+='·';
+    else return false;
+    render();
+  };
+  render();
+  const pad=makeKeypad(['7','8','9','+','−','4','5','6','·',':','1','2','3','(',')','0',v,'⌫','⏎'],key,v);
+  KEYS.h=key;
+  return{box,pad,key,get:()=>s};
+}
+
+function runExpr(spec,host,mode,done){
+  const card=el('div','task');host.appendChild(card);
+  card.appendChild(el('div','task-kind','Uzraksti izteiksmi'));
+  card.appendChild(el('p','story',spec.text));
+  const paper=el('div','paper');card.appendChild(paper);
+  const area=el('div');card.appendChild(area);
+  const L='abcdefghij';
+  const idxs=mode==='free'?[spec.testStep??spec.steps.length-1]:spec.steps.map((_,i)=>i);
+  let n=0,mistakes=0;
+  function line(html){const d=el('div');d.innerHTML=html;paper.appendChild(d);}
+  function show(){
+    area.innerHTML='';const st=spec.steps[idxs[n]],lab=spec.steps.length>1?L[idxs[n]]+') ':'';
+    area.appendChild(el('div','q',lab+st.q));
+    const fb=el('div','hint');
+    if(mode==='guided')fb.innerHTML='<span class="owl">🦉</span>'+esc(S.learn?(st.hint||'Izlasi jautājumu un padomā, kura darbība der: +, −, · vai :'):'Uzraksti izteiksmi un spied „Pārbaudīt”.');
+    else fb.innerHTML='<span class="owl">✍️</span>Uzraksti izteiksmi un spied „Pārbaudīt”. Ir tikai viens mēģinājums.';
+    let att=0;
+    const inp=exprInput(spec.v,s=>{
+      const r=toJs(s,spec.v);if(r.err){fb.className='hint err';fb.textContent=r.err;return;}
+      const ok=same(r.f,toJs(st.a,spec.v).f);
+      if(mode==='free'){
+        line(`<span class="${ok?'check':'wrongline'}">${esc(lab)}${esc(pretty(s))} ${ok?'✓':'✗'}</span>`);
+        if(!ok)line(`Pareizi: ${esc(pretty(st.a))}<span class="why">${esc(st.why)}</span>`);
+        area.innerHTML='';KEYS.h=null;done({expr:ok?1:0});return;
+      }
+      if(ok){
+        line(`${esc(lab)}${esc(pretty(s))} <span class="check">✓</span><span class="why">${esc(st.why)}</span>`);
+        n++;if(n<idxs.length)show();else{area.innerHTML='';KEYS.h=null;done({mistakes});}
+      }else{
+        mistakes++;att++;
+        const tr=(st.traps||[]).find(t=>{const x=toJs(t.e,spec.v);return x.f&&same(r.f,x.f);});
+        fb.className='hint err';
+        fb.innerHTML='🤔 '+esc(tr?tr.m:att>=2?`Pareizi būtu: ${pretty(st.a)}. ${st.why} Tagad uzraksti to pati!`:(st.hint?'Vēl ne. '+st.hint:'Vēl ne. Izlasi jautājumu vēlreiz: kura darbība der — +, −, · vai :?'));
+      }
+    });
+    area.append(inp.box,inp.pad,fb);
+  }
+  show();
+}
+
+/* ================= nezināmais skaitlis ================= */
+function unkEq({form,v,k,c}){return form==='f1'?`${v} · ${k} = ${c}`:form==='f2'?`${k} · ${v} = ${c}`:form==='dd'?`${v} : ${k} = ${c}`:`${k} : ${v} = ${c}`;}
+function unkInfo(sp){
+  const{form,v,k,c}=sp,E=unkEq(sp);
+  if(form==='f1'||form==='f2')return{name:'reizinātājs',acc:'nezināmo reizinātāju',
+    parts:`${E}: skaitļi, kurus reizina, ir reizinātāji, bet ${c} ir reizinājums. Tātad ${v} ir reizinātājs.`,
+    rule:'Nezināmo reizinātāju atrod, reizinājumu dalot ar zināmo reizinātāju.',mini:'Ar maziem skaitļiem: 3 · x = 12 → x = 12 : 3 = 4, jo 3 · 4 = 12.',
+    formula:`${v} = ${c} : ${k}`,wrongs:[`${v} = ${c} · ${k}`,`${v} = ${k} : ${c}`],calc:[c,':',k]};
+  if(form==='dd')return{name:'dalāmais',acc:'nezināmo dalāmo',
+    parts:`${E}: skaitlis, ko dala, ir dalāmais (${v}), ${k} ir dalītājs, ${c} ir dalījums.`,
+    rule:'Nezināmo dalāmo atrod, dalījumu reizinot ar dalītāju.',mini:'Ar maziem skaitļiem: x : 3 = 4 → x = 4 · 3 = 12, jo 12 : 3 = 4.',
+    formula:`${v} = ${c} · ${k}`,wrongs:[`${v} = ${c} : ${k}`,`${v} = ${k} : ${c}`],calc:[c,'·',k]};
+  return{name:'dalītājs',acc:'nezināmo dalītāju',
+    parts:`${E}: ${k} ir dalāmais, ${v} ir dalītājs (ar to dala), ${c} ir dalījums.`,
+    rule:'Nezināmo dalītāju atrod, dalāmo dalot ar dalījumu.',mini:'Ar maziem skaitļiem: 12 : x = 4 → x = 12 : 4 = 3, jo 12 : 3 = 4.',
+    formula:`${v} = ${k} : ${c}`,wrongs:[`${v} = ${k} · ${c}`,`${v} = ${c} : ${k}`],calc:[k,':',c]};
+}
+function genUnk(lvl,form){
+  form=form||pick(['f1','f2','dd','dv']);const v=pick(['x','a','b','k','t','y']);let k,c,ans;
+  if(form==='f1'||form==='f2'){
+    if(lvl===0){k=rnd(3,9);ans=rnd(12,99);}else if(lvl===1){k=rnd(12,40);ans=rnd(12,60);}else{k=rnd(21,89);ans=rnd(14,99);}c=k*ans;
+  }else if(form==='dd'){
+    if(lvl===0){k=rnd(3,9);c=rnd(12,99);}else if(lvl===1){k=rnd(12,40);c=rnd(15,99);}else{k=rnd(101,250);c=rnd(1001,2999);}ans=c*k;
+  }else{
+    if(lvl===0){c=rnd(3,9);ans=rnd(12,60);}else if(lvl===1){c=rnd(3,9);ans=rnd(21,99);}else{c=Math.random()<.5?rnd(4,9):rnd(12,40);ans=rnd(21,99);}k=c*ans;
+  }
+  return{kind:'unk',form,v,k,c,ans};
+}
+function unkAns(sp){return sp.form==='dd'?sp.c*sp.k:sp.form==='dv'?sp.k/sp.c:sp.c/sp.k;}
+
+function mc(host,q,opts,correct,free,onWrong,onRight){
+  const box=el('div');box.appendChild(el('div','q',q));
+  const row=el('div','mc-opts');box.appendChild(row);const fb=el('div','hint');box.appendChild(fb);host.appendChild(box);
+  KEYS.h=null;
+  opts.forEach((o,i)=>{const b=el('button','opt',o);row.appendChild(b);
+    b.onclick=()=>{
+      if(i===correct){b.classList.add('right');row.querySelectorAll('button').forEach(x=>x.disabled=true);onRight(fb);}
+      else{b.classList.add('wrong');b.disabled=true;
+        if(free){row.querySelectorAll('button').forEach(x=>x.disabled=true);row.children[correct].classList.add('right');}
+        onWrong(fb);}
+    };});
+  if(S.learn&&!free)fb.innerHTML='<span class="owl">🦉</span>Izvēlies pareizo atbildi.';else fb.style.display='none';
+}
+
+function numInput(host,expected,mode,hintText,onDone){
+  const box=el('div','expr-box');let s='',att=0,mistakes=0,fin=false;const fb=el('div','hint');
+  const render=()=>{box.innerHTML=(s?esc(s):'<span class="ph">Atbilde…</span>')+'<span class="caret"></span>';};
+  const key=k=>{
+    if(fin)return false;
+    if(/^\d$/.test(k)){if(s.length<9)s+=k;}
+    else if(k==='⌫')s=s.slice(0,-1);
+    else if(k==='⏎'){
+      if(!s)return;
+      if(+s===expected){fin=true;KEYS.h=null;pad.remove();fb.className='hint okk';fb.textContent='✓ Pareizi!';onDone({ok:true,mistakes});return;}
+      if(mode==='free'){fin=true;KEYS.h=null;pad.remove();fb.className='hint err';fb.textContent=`✗ Pareizi būtu ${expected}.`;onDone({ok:false});return;}
+      mistakes++;att++;fb.className='hint err';fb.textContent='🤔 '+(att>=2?`Pareizi būtu ${expected}. ${hintText} Ieraksti to!`:hintText);s='';
+    }else return false;
+    render();
+  };
+  render();const pad=makeKeypad([...DIGITS,'⏎'],key);
+  if(mode==='guided'&&S.learn){fb.innerHTML='<span class="owl">🦉</span>'+esc(hintText);}else fb.style.display=mode==='free'?'none':'';
+  host.append(box,pad,fb);KEYS.h=key;
+  const obs=new MutationObserver(()=>{if(fb.textContent)fb.style.display='';});obs.observe(fb,{childList:true,characterData:true,subtree:true});
+}
+
+function runUnk(sp,host,mode,done){
+  const E=unkEq(sp),I=unkInfo(sp),ans=unkAns(sp),free=mode==='free';
+  const card=el('div','task');host.appendChild(card);
+  card.appendChild(el('div','task-kind','Aprēķini nezināmo skaitli'));
+  if(!free)card.appendChild(storyEl(sp));
+  const paper=el('div','paper');card.appendChild(paper);
+  const line=(t,cls)=>{const d=el('div',cls||'',t);paper.appendChild(d);return d;};
+  const why=t=>{paper.lastChild.appendChild(el('span','why',t));};
+  line(E);
+  const area=el('div');card.appendChild(area);
+  let mistakes=0;const res={form:0,comp:0};
+  function stepName(){
+    area.innerHTML='';
+    mc(area,`Kā sauc nezināmo skaitli ${sp.v}?`,['reizinātājs','dalāmais','dalītājs'],['reizinātājs','dalāmais','dalītājs'].indexOf(I.name),false,
+      fb=>{mistakes++;fb.style.display='';fb.className='hint err';fb.textContent='🤔 '+I.parts;},
+      fb=>{fb.style.display='';fb.className='hint okk';fb.textContent='✓ '+I.parts;area.appendChild(btn('Tālāk →','primary',stepFormula));});
+  }
+  function stepFormula(){
+    area.innerHTML='';const opts=shuffle([I.formula,...I.wrongs]);
+    const next=()=>{line(I.formula);why(I.rule);stepCompute();};
+    mc(area,free?`Kā aprēķina ${sp.v}?`:`Kā aprēķina ${I.acc}?`,opts,opts.indexOf(I.formula),free,
+      fb=>{ if(free){res.form=0;fb.style.display='';fb.className='hint err';fb.textContent='✗ Pareizā izteiksme: '+I.formula;area.appendChild(btn('Tālāk →','primary',next));}
+            else{mistakes++;fb.style.display='';fb.className='hint err';fb.textContent=`🤔 ${I.rule} ${I.mini}`;}},
+      fb=>{res.form=1;fb.style.display='';fb.className='hint okk';fb.textContent=free?'✓ Pareizi.':`✓ ${I.rule}`;area.appendChild(btn('Tālāk →','primary',next));});
+  }
+  function stepCompute(){
+    area.innerHTML='';const[a,op,b]=I.calc;
+    area.appendChild(el('div','q',`Aprēķini: ${a} ${op} ${b}`));
+    const big=op==='·'?(Math.min(a,b)>=10||Math.max(a,b)>=100):a>=100;
+    const fin=r=>{
+      if(free)res.comp=r.ok?1:0;else mistakes+=(r.mistakes||0)+(r.hints||0);
+      line(`${sp.v} = ${ans}`);
+      line(`Pārbaude: ${E.replace(sp.v,ans)} ✓`,'check');why('Ieliekam atrasto skaitli vietā un pārliecināmies, ka vienādība ir pareiza.');
+      area.querySelector('.q')?.remove();
+      done(free?res:{mistakes});
+    };
+    if(big){const sh=op==='·'?buildMul(Math.max(a,b),Math.min(a,b)):buildDiv(a,b);mountSheet(sh,area,mode,fin);}
+    else numInput(area,ans,mode,op==='·'?`Izrēķini ${a} · ${b}.`:`Padomā: ${b} · ? = ${a}`,fin);
+  }
+  free?stepFormula():stepName();
+}
+
+/* ================= reizināšana / dalīšana kā uzdevums ================= */
+function genMul(l){
+  if(l===0)return Math.random()<.5?{kind:'mul',a:rnd(102,989),b:rnd(3,9)}:{kind:'mul',a:rnd(23,98),b:rnd(12,49)};
+  if(l===1)return{kind:'mul',a:rnd(123,989),b:rnd(12,89)};
+  const r=Math.random();
+  if(r<.3)return{kind:'mul',a:rnd(123,989),b:rnd(1,9)*100+rnd(1,9)};
+  if(r<.5)return{kind:'mul',a:rnd(12,98)*10,b:rnd(11,49)*10};
+  if(r<.7)return{kind:'mul',a:rnd(1,9)*1000+rnd(1,9),b:rnd(102,399)};
+  return{kind:'mul',a:rnd(1023,4989),b:rnd(23,89)};
+}
+function genDiv(l){
+  let q,quot,rem=0;
+  if(l===0){q=rnd(3,9);quot=rnd(105,999);}
+  else if(l===1){q=rnd(12,48);quot=rnd(23,399);}
+  else{q=Math.random()<.8?rnd(13,98):rnd(2,9)*100;quot=Math.random()<.4?rnd(1,9)*100+rnd(1,9):rnd(120,3999);if(Math.random()<.25)rem=rnd(1,q-1);}
+  return{kind:'div',D:q*quot+rem,q};
+}
+function lifeStory(sp){
+  if(sp.kind==='mul'){const{a,b}=sp;return pick([
+    `Kokaudzētavā ir ${a} rindas, katrā rindā ${b} stādi. Cik stādu ir kopā?`,
+    `Vienā kravā ir ${a} kg šķeldas. Cik kilogramu ir ${b} tādās kravās?`,
+    `Viena biļete maksā ${a} centus. Cik centu maksā ${b} biļetes?`,
+    `Grāmatā ir ${a} lappuses. Cik lappušu ir ${b} tādās grāmatās?`]);}
+  if(sp.kind==='div'){const{D,q}=sp,r=D%q;const opts=[
+    `${D} stādus sastāda ${q} vienādās rindās. Cik stādu būs katrā rindā?`+(r?' Atlikums — stādi, kas paliek pāri.':''),
+    `${D} konfektes sadala ${q} bērniem vienādi. Cik konfekšu dabū katrs?`+(r?' Atlikums — konfektes, kas paliek pāri.':'')];
+    if(!r)opts.push(`Ceļš ir ${D} km garš. Mašīna stundā nobrauc ${q} km. Cik stundās nobrauks visu ceļu?`);
+    return pick(opts);}
+  if(sp.kind==='unk'){const{form,k,c}=sp;
+    if(form==='dv')return `${k} konfektes sadalīja bērniem — katram tika ${c}. Cik bija bērnu?`;
+    if(form==='dd')return `Stādus sastādīja ${k} rindās, katrā rindā ${c} stādi. Cik stādu bija?`;
+    return `${k} vienādas kastes kopā sver ${c} kg. Cik sver viena kaste?`;}
+  return '';
+}
+function storyEl(sp){const d=el('div','life');d.innerHTML='🌲 <b>Dzīvē:</b> '+esc(lifeStory(sp));return d;}
+function runCalc(sp,host,mode,done){
+  const sh=sp.kind==='mul'?buildMul(sp.a,sp.b):buildDiv(sp.D,sp.q);
+  const card=el('div','task');host.appendChild(card);
+  card.appendChild(el('div','task-kind',sp.kind==='mul'?'Reizini rakstos':'Dali rakstos (stūrītī)'));
+  card.appendChild(el('div','big-eq',sp.kind==='mul'?`${sp.a} · ${sp.b}`:`${sp.D} : ${sp.q}`));
+  if(mode==='guided')card.appendChild(storyEl(sp));
+  const sub=el('div');card.appendChild(sub);
+  mountSheet(sh,sub,mode,r=>{
+    const res=el('div','result');res.innerHTML=`<b>${esc(sh.result)}</b><br><span class="muted">${esc(sh.check)}</span>`;card.appendChild(res);
+    done(mode==='guided'?{mistakes:r.mistakes+r.hints}:{calc:r.ok?1:0});
+  });
+}
+function runSpec(sp,host,mode,done){
+  if(sp.kind==='mul'||sp.kind==='div')return runCalc(sp,host,mode,done);
+  if(sp.kind==='expr')return runExpr(sp,host,mode,done);
+  return runUnk(sp,host,mode,done);
+}
+
+/* ================= mācību kartītes ================= */
+const LESSON={
+mul:`<ol>
+<li>Lielāko skaitli raksti augšā, mazāko apakšā — <b>vieni zem vieniem</b>, katrs cipars savā rūtiņā.</li>
+<li>Ar apakšējā skaitļa <b>pēdējo ciparu</b> reizini katru augšējā cipars, sākot no labās puses.</li>
+<li>Ja sanāk divciparu skaitlis — raksti vienus, bet desmitus <b>paturi atmiņā</b> un pieskaiti nākamajam reizinājumam.</li>
+<li>Nākamo rindu sāc rakstīt <b>vienu rūtiņu pa kreisi</b> — zem tā cipara, ar ko reizini.</li>
+<li>Ja apakšējā skaitlī ir <b>0</b> — to rindu izlaid, nākamo nobīdi vēl par vienu rūtiņu.</li>
+<li>Beigās visas rindas <b>saskaiti</b>.</li></ol>
+<p>🌲 <b>Dzīvē:</b> kokaudzētavā ir 346 rindas, katrā 27 stādi — cik stādu kopā? 346 · 27. Reizina, kad ir <b>daudz vienādu daļu</b>.</p>`,
+div:`<ol>
+<li>Atrodi <b>pirmo nepilno dalāmo</b>: ņem ciparus no kreisās, kamēr skaitlis ir lielāks vai vienāds ar dalītāju.</li>
+<li>Nosaki, <b>cik reizes</b> dalītājs tajā ietilpst — izmēģini: dalītājs · 2, · 3 … Raksti ciparu dalījumā.</li>
+<li><b>Reizini</b> dalītāju ar šo ciparu un raksti zem.</li>
+<li><b>Atņem</b>. Atlikumam jābūt mazākam par dalītāju! Ja nav — cipars bija par mazu.</li>
+<li><b>Nones lejā</b> nākamo ciparu un atkārto no 2. soļa.</li>
+<li>Ja dalītājs neietilpst — dalījumā raksti <b>0</b> un nones nākamo ciparu.</li>
+<li><b>Pārbaude:</b> dalījums · dalītājs (+ atlikums) = dalāmais.</li></ol>
+<p>🌲 <b>Dzīvē:</b> 3180 stādus sastāda 12 vienādās rindās — cik katrā rindā? 3180 : 12. Ja kaut kas paliek pāri, tas ir <b>atlikums</b> (piem., 8473 konfektes 300 bērniem: katram 28, pāri paliek 73).</p>`,
+expr:`<ul>
+<li>Lasi uzdevumu <b>pa daļām</b> — katrai daļai uzraksti savu izteiksmi, tad tās saliec kopā.</li>
+<li><b>Burts</b> ir skaitlis, ko vēl nezinām. Ar to rīkojas tieši tāpat kā ar skaitli: 3 pildspalvas pa <i>a</i> centiem = 3 · <i>a</i>.</li>
+<li>„kopā”, „vēl”, „iekāpa” → <b>+</b></li>
+<li>„par cik vairāk/mazāk”, „atliek”, „palika”, „izkāpa” → <b>−</b></li>
+<li>„katrs pa …”, „vairāki vienādi”, „… stundās” → <b>·</b></li>
+<li>„viens no vairākiem vienādiem”, „sadala vienādi”, „cik reižu”, „cik var nopirkt” → <b>:</b></li>
+<li>Pārbaudi ar skaitli: iedomājies, ka burts ir 10 — vai atbilde ir loģiska?</li></ul>`,
+unk:`<ul>
+<li><b>a · b = c</b> → <i>a</i> un <i>b</i> ir reizinātāji, <i>c</i> — reizinājums.<br>Nezināmais <b>reizinātājs</b> = reizinājums : zināmais reizinātājs.</li>
+<li><b>a : b = c</b> → <i>a</i> ir dalāmais, <i>b</i> — dalītājs, <i>c</i> — dalījums.<br>Nezināmais <b>dalāmais</b> = dalījums · dalītājs.<br>Nezināmais <b>dalītājs</b> = dalāmais : dalījums.</li>
+<li>Ja aizmirsti — izmēģini ar maziem skaitļiem: 12 : 3 = 4. Ja nezinātu 12 → 4 · 3. Ja nezinātu 3 → 12 : 4.</li>
+<li>Rakstu secība: vienādojums → <i>x</i> = … → aprēķins → <i>x</i> = atbilde → <b>pārbaude</b>.</li></ul>
+<p>🌲 <b>Dzīvē:</b> 342 konfektes sadalīja bērniem, katram tika 9. Cik bija bērnu? Bērnu skaitu nezinām, tātad 342 : <i>x</i> = 9 → <i>x</i> = 342 : 9 = 38 bērni.</p>`};
+
+const TOPICS={
+  mul:{name:'Reizināšana rakstos',ico:'✖️',gen:genMul,levels:true},
+  div:{name:'Dalīšana stūrītī',ico:'➗',gen:genDiv,levels:true},
+  expr:{name:'Izteiksmes no teksta',ico:'✏️',gen:()=>genExpr(),levels:false},
+  unk:{name:'Nezināmais skaitlis',ico:'❓',gen:l=>genUnk(l),levels:true}};
+const LEVELS=['Iesildīšanās','Vidēji','Kā pārbaudes darbā'];
+const starsFor=m=>m===0?3:m<=2?2:1;
+const praise=s=>s===3?'Izcili — bez nevienas kļūdas!':s===2?'Labi! Gandrīz bez kļūdām.':'Paveikts! Ar katru reizi sanāks labāk.';
+
+/* ================= skolas uzdevumi ================= */
+const SCHOOL=[
+ {grp:'Reizini rakstos',items:[
+  ['m1',{kind:'mul',a:346,b:27},'pārbaudes darbs'],['m2',{kind:'mul',a:261,b:206},'pārbaudes darbs'],
+  ['m3',{kind:'mul',a:305,b:42},'gatavošanās'],['m4',{kind:'mul',a:840,b:150},'gatavošanās'],['m5',{kind:'mul',a:4008,b:205},'gatavošanās']]},
+ {grp:'Dali rakstos',items:[
+  ['d1',{kind:'div',D:3180,q:12},'pārbaudes darbs'],['d2',{kind:'div',D:9504,q:27},'pārbaudes darbs'],
+  ['d3',{kind:'div',D:13662,q:27},'gatavošanās'],['d4',{kind:'div',D:262753,q:87},'gatavošanās'],['d5',{kind:'div',D:8473,q:300},'gatavošanās']]},
+ {grp:'Uzraksti izteiksmes',items:[
+  ['e1',()=>Object.assign({kind:'expr'},EXPR[0]({p:12,n:2,m:3,v:'a'})),'pārbaudes darbs'],
+  ['e2',()=>Object.assign({kind:'expr'},EXPR[1]({s:87,nm:'Sandis',v:'v'})),'pārbaudes darbs'],
+  ['e3',()=>Object.assign({kind:'expr'},EXPR[2]({k:3,one:27,v:'b'})),'pārbaudes darbs'],
+  ['e4',()=>Object.assign({kind:'expr'},EXPR[3]({pp:75,M:90,nm:'Mārcim'})),'gatavošanās']]},
+ {grp:'Aprēķini nezināmo skaitli',items:[
+  ['u1',{kind:'unk',form:'dv',v:'x',k:342,c:9},'pārbaudes darbs'],['u2',{kind:'unk',form:'f2',v:'a',k:56,c:1344},'pārbaudes darbs'],
+  ['u3',{kind:'unk',form:'dd',v:'b',k:134,c:1608},'pārbaudes darbs'],['u4',{kind:'unk',form:'dv',v:'x',k:420,c:70},'gatavošanās'],
+  ['u5',{kind:'unk',form:'dd',v:'t',k:90,c:9},'gatavošanās'],['u6',{kind:'unk',form:'dd',v:'b',k:17,c:391},'gatavošanās'],
+  ['u7',{kind:'unk',form:'dv',v:'k',k:560,c:80},'gatavošanās'],['u8',{kind:'unk',form:'f2',v:'a',k:12,c:156},'gatavošanās']]}];
+const specLabel=sp=>sp.kind==='mul'?`${sp.a} · ${sp.b}`:sp.kind==='div'?`${sp.D} : ${sp.q}`:sp.kind==='unk'?unkEq(sp):sp.text;
+const topicOf=sp=>sp.kind;
+
+/* ================= skati ================= */
+const main=$('#main');
+function topbar(title,back){const t=el('div','topbar');t.appendChild(btn('← Atpakaļ','small',back||viewHome));t.appendChild(el('h2','',title));main.appendChild(t);}
+
+function viewHome(){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  const h=el('div','hero');
+  const last=S.tests[S.tests.length-1];
+  h.innerHTML=`<b>Sveika!</b> Šeit trenējamies reizināt un dalīt rakstos, uzrakstīt izteiksmes un atrast nezināmo skaitli. Katru uzdevumu risini <b>pa solim</b>, rūtiņu pa rūtiņai — tieši tā, kā to raksta burtnīcā. Pūcīte 🦉 pateiks, ko darīt.`+
+    (last?`<div class="muted" style="margin-top:6px">Pēdējais pārbaudes darbs: <b>${last.pts}/13</b> (${Math.round(last.pts/13*100)}%), ${last.date}</div>`:'');
+  main.appendChild(h);
+  const tiles=el('div','tiles');
+  const hp=el('button','tile wide');hp.innerHTML=`<div class="t">❓ Kā spēlēt? — izlasi vispirms!</div><div class="s">Īsa pamācība: kā rakstīt ciparus, ko nozīmē krāsas, kā saņemt padomu</div>`;
+  hp.onclick=viewHelp;tiles.appendChild(hp);
+  Object.entries(TOPICS).forEach(([key,T])=>{
+    const t=el('button','tile');t.innerHTML=`<div class="ico">${T.ico}</div><div class="t">${T.name}</div><div class="s">Atrisināti: ${S.solved[key]||0}</div>`;
+    t.onclick=()=>viewPractice(key);tiles.appendChild(t);});
+  const sc=el('button','tile');const doneN=Object.keys(S.done).length,totN=SCHOOL.reduce((a,g)=>a+g.items.length,0);
+  sc.innerHTML=`<div class="ico">🏫</div><div class="t">Skolas uzdevumi</div><div class="s">No pārbaudes darba un gatavošanās lapas · ${doneN}/${totN}</div>`;
+  sc.onclick=viewSchool;tiles.appendChild(sc);
+  const ts=el('button','tile');ts.innerHTML=`<div class="ico">📝</div><div class="t">Pārbaudes darbs</div><div class="s">Kā skolā: 10 uzdevumi, 13 punkti, bez padomiem</div>`;
+  ts.onclick=viewTest;tiles.appendChild(ts);
+  main.appendChild(tiles);
+}
+
+function viewHelp(){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  topbar('Kā spēlēt?');
+  const box=el('div','hero');
+  box.innerHTML=`
+<p><b>Sveika! Šī spēle ir kā rūtiņu burtnīca, kas pati palīdz.</b> Tu risini uzdevumu pa solim — katru ciparu savā rūtiņā, tieši tā, kā skolā.</p>
+<h2>1. Izvēlies, ko trenēt</h2>
+<ul>
+<li><b>✖️ Reizināšana</b>, <b>➗ Dalīšana</b>, <b>✏️ Izteiksmes</b>, <b>❓ Nezināmais skaitlis</b> — katrā ir jauni uzdevumi, cik vien gribi.</li>
+<li>Augšā izvēlies grūtību: <b>Iesildīšanās</b> → <b>Vidēji</b> → <b>Kā pārbaudes darbā</b>. Sāc ar vieglāko!</li>
+<li><b>🏫 Skolas uzdevumi</b> — tieši tie uzdevumi, kas bija tavā pārbaudes darbā un gatavošanās lapā.</li>
+<li><b>📝 Pārbaudes darbs</b> — pamēģini, kā tev sanāk bez palīdzības.</li>
+</ul>
+<h2>2. Kā rakstīt ciparus</h2>
+<ul>
+<li>Rūtiņa, kas <b>mirgo ar oranžu rāmi</b>, ir tā, kur jāraksta tagad.</li>
+<li>Ciparu spied ar <b>pogām zem uzdevuma</b> vai ar datora tastatūru.</li>
+<li><b>Dzeltenās</b> rūtiņas rāda skaitļus, ar kuriem šobrīd jārēķina.</li>
+<li>Ja kaut kas jāpatur prātā, zem rūtiņām parādās <b>„Atmiņā: 4”</b>.</li>
+<li>Izteiksmēs raksti ar pogām: <b>·</b> ir reizināt, <b>:</b> ir dalīt, burts ir nezināmais skaitlis. Beigās spied <b>„Pārbaudīt”</b>.</li>
+</ul>
+<h2>3. Pūcīte 🦉 palīdz</h2>
+<ul>
+<li>Pirms katra soļa pūcīte pasaka, <b>ko darīt</b> — izlasi to!</li>
+<li>Ja ieraksti nepareizi, cipars kļūst <b>sarkans</b> un pūcīte paskaidro, kā pareizi. Tad ieraksti pareizo ciparu pati.</li>
+<li>Ja nezini, ko darīt — spied <b>💡 Padoms</b>.</li>
+<li><b>Zaļie</b> cipari ir pareizi. Zem pogām redzi pēdējos paveiktos soļus ar ✓.</li>
+<li>Katras tēmas augšā ir <b>📖 Kā to dara?</b> — tur ir visi likumi īsumā.</li>
+</ul>
+<h2>4. Zvaigznītes ⭐</h2>
+<ul>
+<li>Bez kļūdām un padomiem — <b>⭐⭐⭐</b>, līdz 2 kļūdām — <b>⭐⭐</b>, citādi — <b>⭐</b>.</li>
+<li>Kļūdīties drīkst! Tā mācās. Svarīgi ir saprast, <b>kāpēc</b> bija nepareizi.</li>
+</ul>
+<h2>5. Kad jūties droša</h2>
+<ul>
+<li>Augšā nospied <b>„🦉 Padomi: izslēgti”</b> — tad pūcīte runās tikai tad, kad kļūdīsies.</li>
+<li>Tad izpildi <b>📝 Pārbaudes darbu</b>. Beigās redzēsi tabulu „Protu / Protu daļēji / Vēl jāmācās”, un kļūdainos uzdevumus varēsi izrisināt vēlreiz ar pūcītes palīdzību.</li>
+</ul>
+<p><b>Padoms:</b> labāk katru dienu 15 minūtes nekā reizi nedēļā stundu. Veiksmi! 💪</p>`;
+  main.appendChild(box);
+  main.appendChild(btn('Sapratu — sākam! ▶','primary',viewHome));
+  S.seenHelp=true;store.set('seenHelp',true);
+}
+
+function viewPractice(topic,queue,opts={}){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  const T=topic?TOPICS[topic]:null;
+  topbar(T?T.name:'Kļūdu labošana',opts.back);
+  if(T){const d=el('details','lesson');d.innerHTML=`<summary>📖 Kā to dara?</summary>${LESSON[topic]}`;main.appendChild(d);}
+  let level=store.get('lvl_'+topic,1);
+  if(T&&T.levels&&!queue){
+    const lv=el('div','levels');
+    LEVELS.forEach((n,i)=>{const c=el('button','chip'+(i===level?' on':''),n);c.onclick=()=>{level=i;store.set('lvl_'+topic,i);lv.querySelectorAll('.chip').forEach((x,j)=>x.classList.toggle('on',j===i));next();};lv.appendChild(c);});
+    main.appendChild(lv);
+  }
+  const host=el('div');main.appendChild(host);
+  function next(){
+    host.innerHTML='';KEYS.h=null;
+    const sp=queue?queue.shift():T.gen(level);
+    if(!sp){(opts.back||viewHome)();return;}
+    if(!T){const d=el('details','lesson');d.innerHTML=`<summary>📖 Kā to dara?</summary>${LESSON[topicOf(sp)]}`;host.appendChild(d);}
+    runSpec(sp,host,'guided',r=>{
+      const st=starsFor(r.mistakes);S.stars+=st;const tp=topicOf(sp);S.solved[tp]=(S.solved[tp]||0)+1;
+      if(opts.onDone)opts.onDone(st);save();refreshHeader();
+      const b=el('div','done-banner');b.innerHTML=`<div class="big">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</div><div>${praise(st)}${r.mistakes?` Kļūdas un padomi: ${r.mistakes}.`:''}</div>`;
+      const more=queue?queue.length>0:true;
+      b.appendChild(btn(more?(queue?'Nākamais uzdevums →':'Jauns uzdevums →'):'Gatavs ✓','primary',more?next:(opts.back||viewHome)));
+      host.appendChild(b);setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+    });
+  }
+  next();
+}
+
+function viewSchool(){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  topbar('Skolas uzdevumi');
+  main.appendChild(el('p','muted','Visi uzdevumi no šodienas pārbaudes darba un gatavošanās lapas. Izvēlies uzdevumu un risini soli pa solim.'));
+  SCHOOL.forEach(g=>{
+    main.appendChild(el('h2','',g.grp));
+    const list=el('div','list');
+    g.items.forEach(([id,spec,src])=>{
+      const sp=typeof spec==='function'?spec():spec;
+      const it=el('button','item');const st=S.done[id];
+      it.innerHTML=`<span class="e">${esc(specLabel(sp))}</span><span class="src">${src}</span><span>${st?'⭐'.repeat(st):'○'}</span>`;
+      it.onclick=()=>{const fresh=typeof spec==='function'?spec():Object.assign({},spec);
+        viewPractice(null,[fresh],{back:viewSchool,onDone:s=>{S.done[id]=Math.max(S.done[id]||0,s);}});};
+      list.appendChild(it);});
+    main.appendChild(list);
+  });
+}
+
+function viewTest(){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  topbar('Pārbaudes darbs');
+  const host=el('div');main.appendChild(host);
+  const exT=i=>{const e=Object.assign({kind:'expr'},EXPR[i]());e.testStep=e.steps.length-1;return e;};
+  const specs=[genMul(2),genMul(2),genDiv(2),genDiv(2),exT(0),exT(1),exT(2),genUnk(2,'dv'),genUnk(2,'f2'),genUnk(2,'dd')];
+  const kept=specs.map(s=>JSON.parse(JSON.stringify(s)));
+  const results=[];let i=0;
+  const intro=el('div','hero');intro.innerHTML='Tāpat kā skolā: <b>10 uzdevumi, 13 punkti</b>. Padomu nav, katrai atbildei viens mēģinājums. Beigās redzēsi, kas jau padodas un kas vēl jātrenē.';
+  host.appendChild(intro);host.appendChild(btn('Sākt ▶','primary',run));
+  function run(){
+    host.innerHTML='';window.scrollTo(0,0);
+    host.appendChild(el('div','progress',`Uzdevums ${i+1} no ${specs.length}`));
+    runSpec(specs[i],host,'free',r=>{results[i]=r;
+      host.appendChild(btn(i<specs.length-1?'Tālāk →':'Rādīt rezultātu','primary',()=>{i++;i<specs.length?run():summary();}));});
+  }
+  function summary(){
+    host.innerHTML='';window.scrollTo(0,0);
+    const calc=[0,1,2,3].reduce((a,j)=>a+(results[j].calc||0),0),expr=[4,5,6].reduce((a,j)=>a+(results[j].expr||0),0);
+    const form=[7,8,9].reduce((a,j)=>a+(results[j].form||0),0),comp=[7,8,9].reduce((a,j)=>a+(results[j].comp||0),0);
+    const pts=calc+expr+form+comp,pct=Math.round(pts/13*100);
+    S.tests.push({date:new Date().toLocaleDateString('lv-LV'),pts});save();
+    const tag=(p,m)=>p===m?'<span class="tag g">Protu</span>':p*2>=m?'<span class="tag y">Protu daļēji</span>':'<span class="tag r">Vēl jāmācās</span>';
+    const b=el('div','done-banner');b.innerHTML=`<div class="big">${pts} / 13</div><div><b>${pct}%</b></div>`;host.appendChild(b);
+    const t=el('table','res');t.innerHTML=`<tr><th>Prasme</th><th>Punkti</th><th></th></tr>
+      <tr><td>1. Reizinu un dalu rakstos</td><td class="c">${calc}/4</td><td>${tag(calc,4)}</td></tr>
+      <tr><td>2. Uzrakstu izteiksmes pēc dotā apraksta</td><td class="c">${expr}/3</td><td>${tag(expr,3)}</td></tr>
+      <tr><td>3. Uzrakstu nezināmā darbības locekļa izteiksmi</td><td class="c">${form}/3</td><td>${tag(form,3)}</td></tr>
+      <tr><td>4. Aprēķinu nezināmo darbības locekli</td><td class="c">${comp}/3</td><td>${tag(comp,3)}</td></tr>`;
+    host.appendChild(t);
+    const wrong=kept.filter((s,j)=>{const r=results[j];return j<4?!r.calc:j<7?!r.expr:!(r.form&&r.comp);});
+    if(wrong.length){host.appendChild(el('p','',`Kļūdas bija ${wrong.length} uzdevumos. Izrisini tos vēlreiz soli pa solim — tā labāk iemācīsies!`));
+      host.appendChild(btn('🦉 Mācīties kļūdas soli pa solim','primary',()=>viewPractice(null,wrong.map(s=>{const c=JSON.parse(JSON.stringify(s));if(c.kind==='expr')delete c.testStep;return c;}),{back:viewHome})));}
+    else host.appendChild(el('p','','Visi uzdevumi pareizi — lieliski! 🎉'));
+    host.appendChild(document.createTextNode(' '));host.appendChild(btn('Uz sākumu','',viewHome));
+  }
+}
+
+refreshHeader();store.get('seenHelp',false)?viewHome():viewHelp();
+</script>
+</body>
+</html>
