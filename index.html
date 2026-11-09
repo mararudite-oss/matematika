@@ -127,6 +127,19 @@ table.res td.c{text-align:center}
 .item .e{flex:1;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
 .item .src{font-size:13px;color:var(--muted)}
 .progress{font-weight:800;color:var(--muted);margin-bottom:8px}
+.forest{background:linear-gradient(180deg,var(--tip-bg),var(--ok-bg));border:2px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:14px}
+.forest .rank{font-size:20px;font-weight:800}
+.forest .trees{font-size:28px;line-height:1.25;margin:8px 0;letter-spacing:2px;word-break:break-all}
+.forest .stats{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.bar{height:14px;background:var(--surface);border-radius:999px;overflow:hidden;border:2px solid var(--line);margin:4px 0 10px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .6s}
+.bar.g>i{background:var(--ok)}
+.barlab{font-size:15px;font-weight:700}
+.reward{background:var(--surface);border:2px dashed var(--accent);border-radius:14px;padding:10px 12px;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:16px;font-weight:800;font-size:18px;z-index:50;transition:transform .35s;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.confetti{position:fixed;top:-40px;font-size:28px;z-index:40;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 @media (max-width:480px){ .big-eq{font-size:25px} header h1{font-size:19px} }
 </style>
 </head>
@@ -154,6 +167,58 @@ const store={
 };
 const S={stars:store.get('stars',0),learn:store.get('learn',true),solved:store.get('solved',{}),done:store.get('done',{}),tests:store.get('tests',[])};
 function save(){store.set('stars',S.stars);store.set('learn',S.learn);store.set('solved',S.solved);store.set('done',S.done);store.set('tests',S.tests);}
+/* ===== motivācija: mežs, dzīvnieki, tituli, dienas mērķis, balva ===== */
+const RANKS=[[0,'🌰 Sēkliņa'],[15,'🌱 Stādiņš'],[40,'🌿 Jauns kociņš'],[80,'🌳 Mežsarga palīgs'],[140,'🌲 Mežsardze'],[220,'👑 Meža valdniece'],[350,'🏆 Matemātikas meistare']];
+const ANIMALS=[[20,'🐿️','vāverīte'],[45,'🦔','ezītis'],[75,'🦊','lapsiņa'],[110,'🐇','zaķis'],[150,'🦌','briedis'],[200,'🦉','gudrā pūce'],[260,'🐻','lācis'],[330,'🦄','vienradzis']];
+const DAILY=5;
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
+S.day=store.get('day',{date:'',count:0});S.streak=store.get('streak',{n:0,last:''});
+(function(){try{const p=new URLSearchParams(location.search);const t=p.get('balva');if(t){store.set('reward',{text:t.slice(0,80),goal:Math.max(5,Math.min(2000,+p.get('merkis')||100))});}}catch(e){}})();
+S.reward=store.get('reward',null);
+const rankOf=s=>RANKS.filter(r=>s>=r[0]).pop();
+const nextRank=s=>RANKS.find(r=>r[0]>s);
+function forestHTML(s){
+  const trees=Math.floor(s/5),rest=s%5;
+  let t='';for(let i=0;i<Math.min(trees,60);i++)t+=i%3===2?'🌳':'🌲';
+  if(trees>60)t+=` +${trees-60}`;
+  t+=rest>=3?'🌿':rest>=1?'🌱':'';
+  const an=ANIMALS.filter(a=>s>=a[0]).map(a=>a[1]).join('');
+  return (t||'🌱')+(an?' '+an:'');
+}
+function toast(msg){const t=el('div','toast',msg);document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3200);}
+function confetti(n,set){for(let i=0;i<n;i++){const c=el('span','confetti',pick(set||['⭐','🎉','🌲','✨','🍀']));c.style.left=Math.random()*100+'vw';c.style.animationDuration=(1.6+Math.random()*1.6)+'s';c.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),4000);}}
+function addStars(n,solvedTask){
+  const before=S.stars;S.stars+=n;
+  const msgs=[];
+  if(solvedTask){
+    const td=todayStr();if(S.day.date!==td)S.day={date:td,count:0};S.day.count++;
+    if(S.streak.last!==td){const y=new Date();y.setDate(y.getDate()-1);const ys=y.getFullYear()+'-'+(y.getMonth()+1)+'-'+y.getDate();
+      S.streak={n:S.streak.last===ys?S.streak.n+1:1,last:td};if(S.streak.n>1)msgs.push(`🔥 ${S.streak.n} dienas pēc kārtas!`);}
+    if(S.day.count===DAILY)msgs.push('🎯 Šodienas mērķis izpildīts! Super!');
+  }
+  ANIMALS.forEach(a=>{if(before<a[0]&&S.stars>=a[0])msgs.push(`${a[1]} Tavā mežā ieradās ${a[2]}!`);});
+  RANKS.forEach(r=>{if(r[0]>0&&before<r[0]&&S.stars>=r[0])msgs.push(`Jauns tituls: ${r[1]}!`);});
+  if(Math.floor(S.stars/5)>Math.floor(before/5))msgs.push('🌲 Tavā mežā izauga jauns koks!');
+  if(S.reward&&before<S.reward.goal&&S.stars>=S.reward.goal){msgs.unshift(`🎁 Balva nopelnīta: ${S.reward.text}! Parādi mammai!`);confetti(70,['🎁','🎉','⭐','💖']);}
+  store.set('day',S.day);store.set('streak',S.streak);save();refreshHeader();
+  msgs.slice(0,3).forEach((m,i)=>setTimeout(()=>toast(m),300+i*3500));
+}
+function forestCard(){
+  const s=S.stars,r=rankOf(s),nr=nextRank(s),f=el('div','forest');
+  const td=todayStr(),dc=S.day.date===td?S.day.count:0;
+  const y=new Date();y.setDate(y.getDate()-1);const ys=y.getFullYear()+'-'+(y.getMonth()+1)+'-'+y.getDate();
+  const streak=(S.streak.last===td||S.streak.last===ys)?S.streak.n:0;
+  const na=ANIMALS.find(a=>a[0]>s);
+  let h=`<div class="rank">${r[1]}</div>
+    <div class="stats"><span class="pill">⭐ ${s}</span><span class="pill">🔥 ${streak} ${streak===1?'diena':'dienas'} pēc kārtas</span></div>
+    <div class="barlab">Tavs mežs:</div><div class="trees">${forestHTML(s)}</div>`;
+  if(nr)h+=`<div class="barlab">Līdz titulam ${nr[1]}: ${s}/${nr[0]} ⭐</div><div class="bar"><i style="width:${Math.round((s-r[0])/(nr[0]-r[0])*100)}%"></i></div>`;
+  if(na)h+=`<div class="barlab">Nākamais mežā ieradīsies: ${na[1]} (pie ${na[0]} ⭐)</div>`;
+  h+=`<div class="barlab" style="margin-top:8px">Šodienas mērķis: ${Math.min(dc,DAILY)}/${DAILY} uzdevumi ${dc>=DAILY?'✅':''}</div><div class="bar g"><i style="width:${Math.min(100,dc/DAILY*100)}%"></i></div>`;
+  if(S.reward){const g=S.reward.goal,done=s>=g;
+    h+=`<div class="reward"><div class="barlab">🎁 Balva no mammas: <b>${esc(S.reward.text)}</b></div>${done?'<div><b>Nopelnīta! Parādi mammai! 🎉</b></div>':`<div class="barlab">${s}/${g} ⭐ — vēl ${g-s}</div><div class="bar"><i style="width:${Math.round(s/g*100)}%"></i></div>`}</div>`;}
+  f.innerHTML=h;return f;
+}
 function refreshHeader(){$('#stars').textContent='⭐ '+S.stars;$('#learnBtn').textContent=S.learn?'🦉 Padomi: ieslēgti':'🦉 Padomi: izslēgti';}
 $('#learnBtn').onclick=()=>{S.learn=!S.learn;save();refreshHeader();};
 $('#home').onclick=()=>viewHome();
@@ -735,6 +800,7 @@ function viewHome(){
   const last=S.tests[S.tests.length-1];
   h.innerHTML=`<b>Sveika!</b> Šeit trenējamies reizināt un dalīt rakstos, uzrakstīt izteiksmes un atrast nezināmo skaitli. Katru uzdevumu risini <b>pa solim</b>, rūtiņu pa rūtiņai — tieši tā, kā to raksta burtnīcā. Pūcīte 🦉 pateiks, ko darīt.`+
     (last?`<div class="muted" style="margin-top:6px">Pēdējais pārbaudes darbs: <b>${last.pts}/13</b> (${Math.round(last.pts/13*100)}%), ${last.date}</div>`:'');
+  main.appendChild(forestCard());
   main.appendChild(h);
   const tiles=el('div','tiles');
   const hp=el('button','tile wide');hp.innerHTML=`<div class="t">❓ Kā spēlēt? — izlasi vispirms!</div><div class="s">Īsa pamācība: kā rakstīt ciparus, ko nozīmē krāsas, kā saņemt padomu</div>`;
@@ -782,6 +848,10 @@ function viewHelp(){
 <h2>4. Zvaigznītes ⭐</h2>
 <ul>
 <li>Bez kļūdām un padomiem — <b>⭐⭐⭐</b>, līdz 2 kļūdām — <b>⭐⭐</b>, citādi — <b>⭐</b>.</li>
+<li>Par katrām 5 ⭐ <b>tavā mežā izaug koks</b> 🌲, un, krājot zvaigznes, mežā ierodas dzīvnieki: vāverīte, ezītis, lapsiņa… Kurš būs nākamais?</li>
+<li>Tu iegūsti titulus: no 🌰 Sēkliņas līdz 👑 Meža valdniecei.</li>
+<li>Katru dienu ir mērķis — <b>5 uzdevumi</b>. Spēlē katru dienu, lai augtu 🔥 dienu sērija!</li>
+<li>Ja mamma ir nolikusi <b>🎁 balvu</b>, sākumlapā redzēsi, cik zvaigznīšu vēl jāsavāc.</li>
 <li>Kļūdīties drīkst! Tā mācās. Svarīgi ir saprast, <b>kāpēc</b> bija nepareizi.</li>
 </ul>
 <h2>5. Kad jūties droša</h2>
@@ -813,8 +883,8 @@ function viewPractice(topic,queue,opts={}){
     if(!sp){(opts.back||viewHome)();return;}
     if(!T){const d=el('details','lesson');d.innerHTML=`<summary>📖 Kā to dara?</summary>${LESSON[topicOf(sp)]}`;host.appendChild(d);}
     runSpec(sp,host,'guided',r=>{
-      const st=starsFor(r.mistakes);S.stars+=st;const tp=topicOf(sp);S.solved[tp]=(S.solved[tp]||0)+1;
-      if(opts.onDone)opts.onDone(st);save();refreshHeader();
+      const st=starsFor(r.mistakes);const tp=topicOf(sp);S.solved[tp]=(S.solved[tp]||0)+1;
+      if(opts.onDone)opts.onDone(st);addStars(st,true);if(st===3)confetti(25);
       const b=el('div','done-banner');b.innerHTML=`<div class="big">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</div><div>${praise(st)}${r.mistakes?` Kļūdas un padomi: ${r.mistakes}.`:''}</div>`;
       const more=queue?queue.length>0:true;
       b.appendChild(btn(more?(queue?'Nākamais uzdevums →':'Jauns uzdevums →'):'Gatavs ✓','primary',more?next:(opts.back||viewHome)));
@@ -863,7 +933,7 @@ function viewTest(){
     const calc=[0,1,2,3].reduce((a,j)=>a+(results[j].calc||0),0),expr=[4,5,6].reduce((a,j)=>a+(results[j].expr||0),0);
     const form=[7,8,9].reduce((a,j)=>a+(results[j].form||0),0),comp=[7,8,9].reduce((a,j)=>a+(results[j].comp||0),0);
     const pts=calc+expr+form+comp,pct=Math.round(pts/13*100);
-    S.tests.push({date:new Date().toLocaleDateString('lv-LV'),pts});save();
+    S.tests.push({date:new Date().toLocaleDateString('lv-LV'),pts});save();addStars(pts,true);if(pct>=70)confetti(40);
     const tag=(p,m)=>p===m?'<span class="tag g">Protu</span>':p*2>=m?'<span class="tag y">Protu daļēji</span>':'<span class="tag r">Vēl jāmācās</span>';
     const b=el('div','done-banner');b.innerHTML=`<div class="big">${pts} / 13</div><div><b>${pct}%</b></div>`;host.appendChild(b);
     const t=el('table','res');t.innerHTML=`<tr><th>Prasme</th><th>Punkti</th><th></th></tr>
