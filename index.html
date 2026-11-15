@@ -705,6 +705,12 @@ function lifeStory(sp){
     if(form==='dv')return `${k} konfektes sadalīja bērniem — katram tika ${c}. Cik bija bērnu?`;
     if(form==='dd')return `Stādus sastādīja ${k} rindās, katrā rindā ${c} stādi. Cik stādu bija?`;
     return `${k} vienādas kastes kopā sver ${c} kg. Cik sver viena kaste?`;}
+  if(sp.kind==='pow'&&sp.story){const{b,n}=sp.story;
+    if(n===2)return `Kvadrātveida dobē ir ${b} rindas, katrā rindā ${b} stādi. Cik stādu ir dobē? Tas ir ${pw(b,2)}.`;
+    if(n===3)return `Kubveida kastē ir ${b} slāņi, katrā slānī ${b} rindas pa ${b} klucīšiem. Cik klucīšu ir kastē? Tas ir ${pw(b,3)}.`;
+    if(b===2)return `Baktērija ik stundu sadalās divās. Pēc ${n} stundām to būs ${pw(2,n)}.`;
+    if(b===10)return `Desmit reiz desmit reiz desmit … — tā veidojas apaļi skaitļi. ${pw(10,n)} ir 1 ar ${n} nullēm.`;
+    return `Ziņu nosūta ${b} draugiem, katrs no viņiem — vēl ${b} draugiem, un tā ${n} reizes. Pēdējā reizē ziņu saņem ${pw(b,n)} cilvēki.`;}
   return '';
 }
 function storyEl(sp){const d=el('div','life');d.innerHTML='🌲 <b>Dzīvē:</b> '+esc(lifeStory(sp));return d;}
@@ -720,7 +726,198 @@ function runCalc(sp,host,mode,done){
     done(mode==='guided'?{mistakes:r.mistakes+r.hints}:{calc:r.ok?1:0});
   });
 }
+/* ================= kāpināšana ================= */
+const SUPD='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const sup=n=>String(n).replace(/\d/g,d=>SUPD[d]);
+const pw=(b,n)=>b+sup(n);
+const pwx=(b,n)=>n===1?String(b):pw(b,n);
+const chain=(b,n)=>Array(n).fill(b).join(' · ');
+const ORD={2:'otrajā',3:'trešajā',4:'ceturtajā',5:'piektajā',6:'sestajā',7:'septītajā',8:'astotajā',9:'devītajā',10:'desmitajā'};
+const readPow=(b,n)=>n===2?`${b} kvadrātā`:n===3?`${b} kubā`:`${b} ${ORD[n]||n+'.'} pakāpē`;
+function mcStep(q,correct,wrongs,o={}){const opts=o.fixed||shuffle([correct,...wrongs]);const s=Object.assign({t:'mc',q,opts},o);s.correct=opts.indexOf(correct);delete s.fixed;return s;}
+const noTest=s=>Object.assign({},s,{test:0});
+function meanStep(b,n){
+  const w2=b!==n?chain(n,b):Array(n).fill(b).join(' + ');
+  return mcStep(`Ko nozīmē ${pw(b,n)}?`,chain(b,n),[`${b} · ${n}`,w2],{
+    explain:`Bāzi ${b} reizina pašu ar sevi ${n} reizes. Uzmanību: ${pw(b,n)} nav ${b} · ${n}!`,
+    hint:`Lielais skaitlis ${b} ir bāze — to reizina. Mazais ${n} augšā rāda, cik reizes.`,
+    after:`${pw(b,n)} = ${chain(b,n)}`});
+}
+function powCalcSteps(b,n){
+  const v=b**n,q=`${pw(b,n)} = ?`;
+  if(n===1)return[{t:'num',q,ans:b,hint:`Pirmā pakāpe ir pats skaitlis: ${pw(b,1)} = ${b}.`,after:`${pw(b,1)} = ${b}`,test:1}];
+  if(b===1)return[{t:'num',q,ans:1,hint:'1 · 1 · 1 … vienmēr ir 1. Vieninieks jebkurā pakāpē ir 1.',after:`${pw(1,n)} = 1`,test:1}];
+  if(b===0)return[{t:'num',q,ans:0,hint:'0 · 0 · 0 … vienmēr ir 0. Nulle jebkurā pakāpē ir 0.',after:`${pw(0,n)} = 0`,test:1}];
+  if(b===10)return[{t:'num',q,ans:v,hint:`Desmit pakāpē ir 1 un tik nulles, cik rāda kāpinātājs: ${pw(10,n)} → 1 un ${n} nulles.`,after:`${pw(10,n)} = ${v}`,test:1}];
+  const st=[];let p=b;
+  for(let k=2;k<=n;k++){st.push({t:'num',q:`${p} · ${b} = ?`,qFree:q,ans:p*b,hint:`Reizini ${p} ar ${b}.`,after:`${chain(b,k)} = ${p*b}`,test:k===n?1:0});p*=b;}
+  return st;
+}
+const powStory=(b,n)=>b>1&&n>1?{b,n}:null;
+function powCalc(l){
+  let b,n;const r=Math.random();
+  if(l===0){if(r<.15)[b,n]=[10,rnd(2,4)];else{b=rnd(2,5);n=b<=3?rnd(2,4):rnd(2,3);}}
+  else if(l===1){if(r<.15)[b,n]=[10,rnd(3,6)];else if(r<.3)[b,n]=pick([[1,rnd(5,20)],[0,rnd(3,9)],[rnd(12,99),1]]);else{b=rnd(2,9);n=b===2?rnd(4,7):b<=4?rnd(3,4):b<=6?3:2;}}
+  else{if(r<.2)[b,n]=pick([[1,rnd(10,100)],[0,rnd(5,50)],[rnd(100,999),1],[10,rnd(5,7)]]);
+    else[b,n]=pick([[2,8],[2,9],[2,10],[3,5],[4,4],[5,4],[6,3],[7,3],[8,3],[9,3],[11,2],[12,2],[13,2],[15,2],[20,2],[20,3],[30,2]]);}
+  const pre=(n>1&&b>1&&b!==10&&b!==n&&l<2)?[meanStep(b,n)]:[];
+  return{kind:'pow',title:'Aprēķini pakāpes vērtību',head:`${pw(b,n)} = ?`,story:powStory(b,n),steps:[...pre,...powCalcSteps(b,n)]};
+}
+function powWrite(l){
+  const b=l===0?rnd(2,6):rnd(2,12);let n=l===0?rnd(2,4):rnd(2,6);if(n===b)n++;
+  const ch=chain(b,n),calc=b**n<=5000&&b!==10?powCalcSteps(b,n).map(noTest):[];
+  if(l>0&&Math.random()<.4){
+    return{kind:'pow',title:'Pieraksti kā pakāpi',head:`„${readPow(b,n)}”`,story:powStory(b,n),steps:[
+      mcStep(`Kā pieraksta „${readPow(b,n)}”?`,pw(b,n),[pw(n,b),`${b} · ${n}`],{explain:`${b} ir bāze, ${n} — kāpinātājs (mazais skaitlis augšā).`,hint:`Bāze ir skaitlis, ko reizina (${b}). Kāpinātājs ir „cik reizes” (${n}).`,after:`„${readPow(b,n)}” = ${pw(b,n)} = ${ch}`,test:1}),...calc]};
+  }
+  return{kind:'pow',title:'Pieraksti reizinājumu kā pakāpi',head:ch,story:powStory(b,n),steps:[
+    {t:'num',q:'Kurš skaitlis tiek reizināts pats ar sevi? (bāze)',ans:b,hint:`Paskaties, kurš skaitlis atkārtojas: ${ch}.`,after:`bāze = ${b}`},
+    {t:'num',q:'Cik reizes tas atkārtojas? (kāpinātājs)',qFree:`${ch} = ${b}ˣ. Cik ir x?`,ans:n,hint:`Saskaiti reizinātājus: ${ch}.`,after:`${ch} = ${pw(b,n)}`,test:1},...calc]};
+}
+function powParts(){
+  const b=rnd(2,9);let n=rnd(2,5);if(n===b)n=b===2?3:2;
+  const P=['bāze','kāpinātājs','pakāpe'];
+  return{kind:'pow',title:'Pakāpes daļas',head:pw(b,n),story:powStory(b,n),steps:[
+    mcStep(`Kā sauc lielo skaitli ${b} pakāpē ${pw(b,n)}?`,'bāze',[],{fixed:P,explain:`${b} ir bāze — skaitlis, ko reizina pašu ar sevi.`,hint:'Lielais skaitlis lejā ir tas, ko reizina.',after:`${b} — bāze`}),
+    mcStep(`Kā sauc mazo skaitli ${n} augšā?`,'kāpinātājs',[],{fixed:P,explain:`${n} ir kāpinātājs — tas rāda, cik reizes bāzi reizina.`,hint:'Mazais skaitlis augšā rāda, cik reizes reizina.',after:`${n} — kāpinātājs`}),
+    mcStep(`Kā lasa ${pw(b,n)}?`,readPow(b,n),[readPow(n,b),`${b} reiz ${n}`],{explain:'Vispirms saka bāzi, tad pakāpi. Otrā pakāpe = „kvadrātā”, trešā = „kubā”.',hint:`Bāze ir ${b}, kāpinātājs ${n}.`,after:`lasa: „${readPow(b,n)}”`}),
+    meanStep(b,n),...powCalcSteps(b,n)]};
+}
+function powCmp(){
+  let[x,y]=pick([[[2,3],[3,2]],[[2,4],[4,2]],[[2,5],[5,2]],[[3,4],[4,3]],[[2,6],[6,2]],[[10,2],[2,10]],[[5,3],[3,5]],[[1,9],[9,1]],[[3,3],[5,2]],[[2,7],[11,2]],[[7,2],[2,6]],[[4,3],[8,2]],[[6,2],[2,5]],[[0,5],[5,1]]]);
+  if(Math.random()<.5)[x,y]=[y,x];
+  const a=x[0]**x[1],c=y[0]**y[1],sg=a<c?'<':a>c?'>':'=',X=pw(...x),Y=pw(...y);
+  const one=(p,v)=>({t:'num',q:`${pw(...p)} = ?`,ans:v,hint:p[1]===1?'Pirmā pakāpe ir pats skaitlis.':p[0]<2?`${p[0]} jebkurā pakāpē ir ${p[0]}.`:`${pw(...p)} = ${chain(...p)}`,after:`${pw(...p)} = ${v}`});
+  return{kind:'pow',title:'Salīdzini pakāpes',head:`${X}   ?   ${Y}`,story:null,steps:[one(x,a),one(y,c),
+    mcStep(`Salīdzini: ${X} ? ${Y}`,sg,[],{fixed:['<','=','>'],explain:`${a} ${sg} ${c}, tātad ${X} ${sg} ${Y}.`,hint:'Salīdzini izrēķinātos skaitļus, nevis bāzes!',after:`${X} ${sg} ${Y}`,test:1})]};
+}
+function powExp(l){
+  if(Math.random()<.35){const n=pick([2,2,3]),b=n===2?rnd(3,12):rnd(2,6),v=b**n;
+    return{kind:'pow',title:'Atrodi nezināmo bāzi',head:`x${sup(n)} = ${v}`,story:null,steps:[
+      {t:'num',q:`Kurš skaitlis ${n===2?'kvadrātā':'kubā'} ir ${v}? x = ?`,qFree:`x${sup(n)} = ${v}. Cik ir x?`,ans:b,
+       hint:`Meklē skaitli, ko ${n===2?'reizinot pašu ar sevi':'trīs reizes reizinot pašu ar sevi'} iegūst ${v}. Izmēģini: ${n===2?'5 · 5 = 25, 6 · 6 = 36 …':'2 · 2 · 2 = 8, 3 · 3 · 3 = 27 …'}`,after:`x = ${b}, jo ${chain(b,n)} = ${v}`,test:1}]};}
+  const[b,n]=pick(l<2?[[2,3],[2,4],[2,5],[3,3],[3,4],[5,3],[10,3],[10,4]]:[[2,6],[2,7],[2,8],[3,5],[4,4],[5,4],[10,6],[7,3]]),v=b**n;
+  return{kind:'pow',title:'Atrodi nezināmo kāpinātāju',head:`${b}ˣ = ${v}`,story:null,steps:[
+    {t:'num',q:`${b}ˣ = ${v}. Cik ir x?`,ans:n,hint:`Reizini ${b} pašu ar sevi un skaiti reizes: ${b}, ${b*b}, ${b**3} … līdz sanāk ${v}.`,after:`x = ${n}, jo ${pw(b,n)} = ${v}`,test:1}]};
+}
+const FIRST=['kāpināšanu','darbību iekavās','reizināšanu vai dalīšanu','saskaitīšanu vai atņemšanu'];
+function orderSpec(head,first,parts,warn){
+  const steps=[mcStep(`${head}. Ko rēķina vispirms?`,first,[],{fixed:FIRST,explain:warn,hint:'Secība: iekavas → kāpināšana → reizināšana un dalīšana → saskaitīšana un atņemšana.'})];
+  parts.forEach(([q,ans,after],i)=>{const last=i===parts.length-1;steps.push({t:'num',q,ans,hint:`Izrēķini ${q.replace(' = ?','')}.`,after,test:last?1:0,qFree:last?`${head} = ?`:undefined});});
+  return{kind:'pow',title:'Darbību secība ar pakāpēm',head:`${head} = ?`,story:null,steps};
+}
+const POW_ORDER=[
+  ()=>{const a=rnd(2,9),b=rnd(2,5),n=b<=3?rnd(2,3):2,v=b**n;
+    return orderSpec(`${a} · ${pw(b,n)}`,'kāpināšanu',[[`${pw(b,n)} = ?`,v,`${a} · ${pw(b,n)} = ${a} · ${v}`],[`${a} · ${v} = ?`,a*v,`= ${a*v}`]],`Vispirms kāpina tikai ${b}, nevis ${a} · ${b}!`);},
+  ()=>{const a=rnd(11,60),b=rnd(2,6),n=b<=3?rnd(2,4):2,v=b**n;
+    return orderSpec(`${a} + ${pw(b,n)}`,'kāpināšanu',[[`${pw(b,n)} = ?`,v,`${a} + ${pw(b,n)} = ${a} + ${v}`],[`${a} + ${v} = ?`,a+v,`= ${a+v}`]],'Kāpināšanu izdara pirms saskaitīšanas.');},
+  ()=>{const k=rnd(2,9),n=rnd(2,4),v=10**n;
+    return orderSpec(`${k} · ${pw(10,n)}`,'kāpināšanu',[[`${pw(10,n)} = ?`,v,`${k} · ${pw(10,n)} = ${k} · ${v}`],[`${k} · ${v} = ?`,k*v,`= ${k*v}`]],`Vispirms ${pw(10,n)} — tas ir 1 ar ${n} nullēm.`);},
+  ()=>{const b=rnd(3,9),n=b<=4?3:2,v=b**n,c=rnd(2,v-1);
+    return orderSpec(`${pw(b,n)} − ${c}`,'kāpināšanu',[[`${pw(b,n)} = ?`,v,`${pw(b,n)} − ${c} = ${v} − ${c}`],[`${v} − ${c} = ?`,v-c,`= ${v-c}`]],'Kāpināšanu izdara pirms atņemšanas.');},
+  ()=>{const a=rnd(2,9),b=rnd(2,9),A=a*a,B=b*b;
+    return orderSpec(`${pw(a,2)} + ${pw(b,2)}`,'kāpināšanu',[[`${pw(a,2)} = ?`,A,`= ${A} + ${pw(b,2)}`],[`${pw(b,2)} = ?`,B,`= ${A} + ${B}`],[`${A} + ${B} = ?`,A+B,`= ${A+B}`]],'Abus kvadrātus izrēķina vispirms, tikai tad saskaita.');},
+  ()=>{const a=rnd(2,5),b=rnd(2,5),p=a*b;
+    return orderSpec(`(${a} · ${b})²`,'darbību iekavās',[[`${a} · ${b} = ?`,p,`(${a} · ${b})² = ${pw(p,2)}`],[`${pw(p,2)} = ?`,p*p,`= ${p*p}`]],'Iekavas vienmēr pirmās! Pēc tam kāpina visu, kas sanāca iekavās.');},
+  ()=>{const a=rnd(2,7),b=rnd(2,6),s=a+b;
+    return orderSpec(`(${a} + ${b})²`,'darbību iekavās',[[`${a} + ${b} = ?`,s,`(${a} + ${b})² = ${pw(s,2)}`],[`${pw(s,2)} = ?`,s*s,`= ${s*s}`]],`Iekavas pirmās. Uzmanību: (${a} + ${b})² nav ${pw(a,2)} + ${pw(b,2)}!`);},
+  ()=>{const b=rnd(2,9),k=rnd(2,9),B=b*b,c=B*k;
+    return orderSpec(`${c} : ${pw(b,2)}`,'kāpināšanu',[[`${pw(b,2)} = ?`,B,`${c} : ${pw(b,2)} = ${c} : ${B}`],[`${c} : ${B} = ?`,k,`= ${k}`]],'Vispirms kāpina, tad dala.');},
+  ()=>{const a=rnd(3,5),A=a**3,b=rnd(2,Math.min(9,Math.floor(Math.sqrt(A-1)))),B=b*b;
+    return orderSpec(`${pw(a,3)} − ${pw(b,2)}`,'kāpināšanu',[[`${pw(a,3)} = ?`,A,`= ${A} − ${pw(b,2)}`],[`${pw(b,2)} = ?`,B,`= ${A} − ${B}`],[`${A} − ${B} = ?`,A-B,`= ${A-B}`]],'Abas pakāpes izrēķina vispirms, tad atņem.');},
+  ()=>{const a=rnd(2,4),b=rnd(2,3),c=rnd(2,5),A=a*a,B=b**3,M=c*A;
+    return orderSpec(`${c} · ${pw(a,2)} + ${pw(b,3)}`,'kāpināšanu',[[`${pw(a,2)} = ?`,A,`= ${c} · ${A} + ${pw(b,3)}`],[`${pw(b,3)} = ?`,B,`= ${c} · ${A} + ${B}`],[`${c} · ${A} = ?`,M,`= ${M} + ${B}`],[`${M} + ${B} = ?`,M+B,`= ${M+B}`]],'Vispirms visas pakāpes, tad reizināšana, beigās saskaitīšana.');}];
+function powOrder(l){const pool=l===0?[0,1,2]:l===1?[0,1,2,3,4,5]:[3,4,5,6,7,8,9];return POW_ORDER[pick(pool)]();}
+function powFact(){
+  let a,b,c,N;do{a=rnd(1,4);b=rnd(1,3);c=Math.random()<.35?1:0;N=2**a*3**b*5**c;}while(N>1000||N<24);
+  const fs=[[2,a],[3,b],[5,c]].filter(x=>x[1]),steps=[];let m=N;
+  fs.forEach(([p,e])=>{for(let i=0;i<e;i++){steps.push({t:'num',q:`${m} : ${p} = ?`,ans:m/p,hint:`${m} dalās ar ${p}. Izrēķini ${m} : ${p}.`,after:`${m} : ${p} = ${m/p}`});m/=p;}});
+  const full=fs.map(([p,e])=>chain(p,e)).join(' · '),res=fs.map(([p,e])=>pwx(p,e)).join(' · ');
+  fs.forEach(([p,e],i)=>steps.push({t:'num',q:`Cik reizes dalījām ar ${p}? (tas būs kāpinātājs pie ${p})`,qFree:`${N} sadali pirmreizinātājos. Cik reizes tajā ir reizinātājs ${p}?`,ans:e,
+    hint:`Saskaiti augšā, cik reizes dalījām ar ${p}.`,after:i===fs.length-1?`${N} = ${full} = ${res}`:`${p} — ${e} ${e===1?'reizi':'reizes'}`,test:1}));
+  return{kind:'pow',title:'Sadali pirmreizinātājos un pieraksti ar pakāpēm',head:`${N} = ?`,story:null,steps};
+}
+function genPow(l){
+  const pool=l===0?[powParts,powWrite,powCalc,powCalc,powOrder]:l===1?[powWrite,powCalc,powCalc,powOrder,powOrder,powCmp,powExp]:[powWrite,powCalc,powOrder,powOrder,powOrder,powCmp,powExp,powFact];
+  return pick(pool)(l);
+}
+/* ================= reizinātāji un pirmreizinātāji ================= */
+const isPrime=n=>{if(n<2)return false;for(let d=2;d*d<=n;d++)if(n%d===0)return false;return true;};
+const minPF=n=>{for(let d=2;d*d<=n;d++)if(n%d===0)return d;return n;};
+const pfList=n=>{const r=[];while(n>1){const p=minPF(n);r.push(p);n/=p;}return r;};
+const pfPow=n=>{const c={};pfList(n).forEach(p=>c[p]=(c[p]||0)+1);return Object.entries(c).map(([p,e])=>pwx(+p,e)).join(' · ');};
+const DIVHINT='Dalāmības pazīmes: ar 2 — pāra skaitlis; ar 3 — ciparu summa dalās ar 3; ar 5 — beidzas ar 0 vai 5. Tad izmēģini 7, 11, 13.';
+function facPrime(l){
+  const pool=l===0?[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,4,6,9,10,12,15,21,25,27,33,35,39,45,49]
+    :l===1?[53,59,61,67,71,73,79,83,89,97,51,57,63,69,77,81,87,91,93,95,99]
+    :[101,103,107,109,113,127,131,137,139,149,151,157,111,117,119,121,133,143,147,161,169,171,187,203];
+  const N=pick(pool),pr=isPrime(N);
+  const steps=[mcStep(`Vai ${N} ir pirmskaitlis vai salikts skaitlis?`,pr?'pirmskaitlis':'salikts skaitlis',[],{fixed:['pirmskaitlis','salikts skaitlis'],
+    explain:pr?`${N} dalās tikai ar 1 un ar sevi — tas ir pirmskaitlis.`:`${N} = ${minPF(N)} · ${N/minPF(N)}, tātad tam ir vēl citi dalītāji — salikts skaitlis.`,
+    hint:`Pirmskaitlis dalās tikai ar 1 un ar sevi. ${DIVHINT}`,after:`${N} — ${pr?'pirmskaitlis':'salikts skaitlis'}`,test:1})];
+  if(!pr)steps.push({t:'num',q:`Ar kādu mazāko pirmskaitli dalās ${N}?`,ans:minPF(N),hint:DIVHINT,after:`${N} = ${minPF(N)} · ${N/minPF(N)}`});
+  return{kind:'fac',title:'Pirmskaitlis vai salikts skaitlis?',head:String(N),story:null,steps};
+}
+function facPairs(l){
+  const N=pick(l===0?[12,18,20,24,28,30,36]:l===1?[36,40,42,48,54,60,72]:[72,84,90,96,100,120,144]);
+  const ds=[];for(let d=2;d*d<=N;d++)if(N%d===0)ds.push(d);
+  const steps=ds.map((d,i)=>({t:'num',q:`${d} · ? = ${N}`,ans:N/d,hint:`Izrēķini ${N} : ${d}.`,after:`${N} = ${d} · ${N/d}`,test:0}));
+  const res=pfList(N).join(' · '),wr=[`${ds[ds.length-1]} · ${N/ds[ds.length-1]}`,`${ds[0]} · ${N/ds[0]}`].filter(x=>x!==res);
+  if(wr.length<2)wr.push(`1 · ${N}`);
+  steps.push(mcStep(`Kurš no šiem ir ${N} sadalījums PIRMreizinātājos?`,res,wr.slice(0,2),{explain:`Visi reizinātāji ${res} ir pirmskaitļi. Pārējos var sadalīt vēl sīkāk.`,
+    hint:'Pirmreizinātājos — visiem reizinātājiem jābūt pirmskaitļiem (2, 3, 5, 7, 11 …).',after:`${N} = ${res} = ${pfPow(N)}`,test:1}));
+  return{kind:'fac',title:'Sadali reizinātājos dažādos veidos',head:`${N} = ? · ?`,story:null,steps};
+}
+function facColumn(l){
+  let N;const P=l===0?[2,2,3,3,5]:l===1?[2,2,3,3,5,7]:[2,2,3,5,7,11,13];
+  do{N=1;const k=l===0?rnd(3,4):l===1?rnd(3,5):rnd(4,6);for(let i=0;i<k;i++)N*=pick(P);}while(N<(l===0?12:l===1?40:100)||N>(l===0?120:l===1?500:2000)||isPrime(N));
+  const steps=[];let m=N;
+  while(m>1){const p=minPF(m);
+    steps.push({t:'num',q:`Ar kādu mazāko pirmskaitli dalās ${m}?`,ans:p,hint:m===p?`${m} ir pirmskaitlis — to dala ar sevi.`:DIVHINT,after:null});
+    steps.push({t:'num',q:`${m} : ${p} = ?`,ans:m/p,hint:`Izrēķini ${m} : ${p}.`,after:`${m} | ${p}`});m/=p;}
+  steps[steps.length-1].after+='\n1 |';
+  const res=pfPow(N),list=pfList(N),c={};list.forEach(p=>c[p]=(c[p]||0)+1);
+  const ks=Object.keys(c),wr=new Set();
+  wr.add(ks.map(p=>pwx(+p,c[p]+1)).join(' · '));
+  if(ks.length>1)wr.add(ks.map((p,i)=>pwx(+p,c[ks[(i+1)%ks.length]])).join(' · '));
+  if(N%4===0)wr.add(`4 · ${N/4}`);else if(N%9===0)wr.add(`9 · ${N/9}`);else wr.add(`${list[0]} · ${N/list[0]}`);
+  wr.delete(res);
+  steps.push(mcStep(`Kā pieraksta ${N} sadalījumu pirmreizinātājos?`,res,[...wr].slice(0,2),{explain:`Labajā pusē stabiņā ir ${list.join(', ')}. Vienādos pieraksta ar pakāpi.`,
+    hint:'Saskaiti, cik reizes stabiņa labajā pusē ir katrs pirmskaitlis — tas ir kāpinātājs.',after:`${N} = ${list.join(' · ')} = ${res}`,test:1}));
+  return{kind:'fac',title:'Sadali pirmreizinātājos (stabiņā)',head:`${N} = ?`,story:null,steps};
+}
+function genFac(l){return pick(l===0?[facPrime,facPrime,facPairs,facColumn]:l===1?[facPrime,facPairs,facColumn,facColumn]:[facPrime,facPairs,facColumn,facColumn,powFact])(l);}
+
+function runPow(sp,host,mode,done){
+  const free=mode==='free';
+  const card=el('div','task');host.appendChild(card);
+  card.appendChild(el('div','task-kind',sp.title));
+  card.appendChild(el('div','big-eq',sp.head));
+  if(!free&&sp.story)card.appendChild(storyEl(sp));
+  const paper=el('div','paper');card.appendChild(paper);
+  const area=el('div');card.appendChild(area);
+  const list=free?sp.steps.filter(s=>s.test):sp.steps;
+  let i=0,mistakes=0,ok=1;
+  function next(){
+    const s=list[i++],last=i>=list.length;
+    const finish=()=>{if(s.after){const d=el('div','',s.after);d.style.whiteSpace='pre-line';paper.appendChild(d);}
+      if(last){KEYS.h=null;done(free?{pow:ok}:{mistakes});}else{area.innerHTML='';next();}};
+    area.innerHTML='';
+    const q=free&&s.qFree?s.qFree:s.q;
+    if(s.t==='num'){area.appendChild(el('div','q',q));
+      numInput(area,s.ans,mode,s.hint,r=>{if(!r.ok)ok=0;mistakes+=r.mistakes||0;finish();});}
+    else mc(area,q,s.opts,s.correct,free,
+      fb=>{fb.style.display='';fb.className='hint err';
+        if(free){ok=0;fb.textContent='✗ Pareizi: '+s.opts[s.correct];finish();}
+        else{mistakes++;fb.textContent='🤔 '+(s.hint||'Padomā vēlreiz.');}},
+      fb=>{fb.style.display='';fb.className='hint okk';fb.textContent='✓ '+(free?'Pareizi.':(s.explain||'Pareizi!'));
+        if(free||last)finish();else area.appendChild(btn('Tālāk →','primary',finish));});
+  }
+  next();
+}
+
 function runSpec(sp,host,mode,done){
+  if(sp.kind==='pow'||sp.kind==='fac')return runPow(sp,host,mode,done);
   if(sp.kind==='mul'||sp.kind==='div')return runCalc(sp,host,mode,done);
   if(sp.kind==='expr')return runExpr(sp,host,mode,done);
   return runUnk(sp,host,mode,done);
@@ -758,13 +955,35 @@ unk:`<ul>
 <li><b>a : b = c</b> → <i>a</i> ir dalāmais, <i>b</i> — dalītājs, <i>c</i> — dalījums.<br>Nezināmais <b>dalāmais</b> = dalījums · dalītājs.<br>Nezināmais <b>dalītājs</b> = dalāmais : dalījums.</li>
 <li>Ja aizmirsti — izmēģini ar maziem skaitļiem: 12 : 3 = 4. Ja nezinātu 12 → 4 · 3. Ja nezinātu 3 → 12 : 4.</li>
 <li>Rakstu secība: vienādojums → <i>x</i> = … → aprēķins → <i>x</i> = atbilde → <b>pārbaude</b>.</li></ul>
-<p>🌲 <b>Dzīvē:</b> 342 konfektes sadalīja bērniem, katram tika 9. Cik bija bērnu? Bērnu skaitu nezinām, tātad 342 : <i>x</i> = 9 → <i>x</i> = 342 : 9 = 38 bērni.</p>`};
+<p>🌲 <b>Dzīvē:</b> 342 konfektes sadalīja bērniem, katram tika 9. Cik bija bērnu? Bērnu skaitu nezinām, tātad 342 : <i>x</i> = 9 → <i>x</i> = 342 : 9 = 38 bērni.</p>`,
+pow:`<ul>
+<li><b>Kāpināšana</b> ir vienādu reizinātāju reizināšana: 2 · 2 · 2 · 2 · 2 = 2<sup>5</sup>.</li>
+<li>2<sup>5</sup> — <b>2 ir bāze</b> (ko reizina), <b>5 ir kāpinātājs</b> (cik reizes), viss kopā ir <b>pakāpe</b>. Lasa: „divi piektajā pakāpē”.</li>
+<li>Otrā pakāpe — <b>kvadrāts</b> (5<sup>2</sup> = „pieci kvadrātā” = 25), trešā — <b>kubs</b> (2<sup>3</sup> = „divi kubā” = 8).</li>
+<li>⚠️ <b>3<sup>4</sup> nav 3 · 4!</b> 3<sup>4</sup> = 3 · 3 · 3 · 3 = 81, bet 3 · 4 = 12.</li>
+<li>Rēķini pa solim: 3 · 3 = 9, 9 · 3 = 27, 27 · 3 = 81.</li>
+<li>Īpašie gadījumi: <b>a<sup>1</sup> = a</b> (7<sup>1</sup> = 7) · <b>1<sup>n</sup> = 1</b> · <b>0<sup>n</sup> = 0</b> · <b>10<sup>n</sup> = 1 un n nulles</b> (10<sup>4</sup> = 10 000).</li>
+<li><b>Darbību secība:</b> iekavas → kāpināšana → reizināšana un dalīšana → saskaitīšana un atņemšana.<br>2 · 3<sup>2</sup> = 2 · 9 = 18, bet (2 · 3)<sup>2</sup> = 6<sup>2</sup> = 36.</li>
+<li>Salīdzinot pakāpes, <b>vispirms izrēķini abas</b>: 2<sup>5</sup> = 32 &gt; 5<sup>2</sup> = 25.</li>
+<li>Sadalot pirmreizinātājos, vienādos reizinātājus pieraksta ar pakāpi: 72 = 2 · 2 · 2 · 3 · 3 = 2<sup>3</sup> · 3<sup>2</sup>.</li></ul>
+<p>🌲 <b>Dzīvē:</b> kvadrātveida dobē ir 7 rindas pa 7 stādiem — 7<sup>2</sup> = 49 stādi. Kubā no 4 · 4 · 4 klucīšiem ir 4<sup>3</sup> = 64 klucīši.</p>`,
+fac:`<ul>
+<li><b>Sadalīt skaitli reizinātājos</b> = uzrakstīt to kā reizinājumu. To var izdarīt vairākos veidos: 24 = 2 · 12 = 3 · 8 = 4 · 6.</li>
+<li><b>Pirmskaitlis</b> dalās tikai ar 1 un ar sevi: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 … <b>Salikts skaitlis</b> dalās vēl ar kādu citu skaitli: 4, 6, 9, 15 …</li>
+<li>⚠️ 1 nav ne pirmskaitlis, ne salikts skaitlis. 2 ir vienīgais pāra pirmskaitlis.</li>
+<li><b>Dalāmības pazīmes:</b> ar 2 — pāra skaitlis; ar 3 — ciparu summa dalās ar 3 (51: 5 + 1 = 6 → dalās!); ar 5 — beidzas ar 0 vai 5; ar 10 — beidzas ar 0.</li>
+<li><b>Sadalīt pirmreizinātājos</b> = reizinājums, kurā <b>visi reizinātāji ir pirmskaitļi</b>. Tas ir tikai viens (secība nav svarīga).</li>
+<li><b>Stabiņā:</b> pa kreisi raksti skaitli, pa labi — mazāko pirmskaitli, ar ko tas dalās. Dalījumu raksti zem. Turpini, līdz kreisajā pusē ir 1.<br>
+<span style="font-family:monospace">84 | 2<br>42 | 2<br>21 | 3<br>&nbsp;7 | 7<br>&nbsp;1 |</span><br>84 = 2 · 2 · 3 · 7 = 2<sup>2</sup> · 3 · 7</li></ul>
+<p>🌲 <b>Dzīvē:</b> 24 stādus var sastādīt 2 rindās pa 12, 3 rindās pa 8 vai 4 rindās pa 6 — tie ir 24 sadalījumi reizinātājos. Bet 23 stādus vienādās rindās (vairāk par vienu) nevar — 23 ir pirmskaitlis!</p>`};
 
 const TOPICS={
   mul:{name:'Reizināšana rakstos',ico:'✖️',gen:genMul,levels:true},
   div:{name:'Dalīšana stūrītī',ico:'➗',gen:genDiv,levels:true},
   expr:{name:'Izteiksmes no teksta',ico:'✏️',gen:()=>genExpr(),levels:false},
-  unk:{name:'Nezināmais skaitlis',ico:'❓',gen:l=>genUnk(l),levels:true}};
+  unk:{name:'Nezināmais skaitlis',ico:'❓',gen:l=>genUnk(l),levels:true},
+  pow:{name:'Kāpināšana',ico:'🚀',gen:genPow,levels:true},
+  fac:{name:'Reizinātāji un pirmreizinātāji',ico:'🧩',gen:genFac,levels:true}};
 const LEVELS=['Iesildīšanās','Vidēji','Kā pārbaudes darbā'];
 const starsFor=m=>m===0?3:m<=2?2:1;
 const praise=s=>s===3?'Izcili — bez nevienas kļūdas!':s===2?'Labi! Gandrīz bez kļūdām.':'Paveikts! Ar katru reizi sanāks labāk.';
@@ -786,8 +1005,20 @@ const SCHOOL=[
   ['u1',{kind:'unk',form:'dv',v:'x',k:342,c:9},'pārbaudes darbs'],['u2',{kind:'unk',form:'f2',v:'a',k:56,c:1344},'pārbaudes darbs'],
   ['u3',{kind:'unk',form:'dd',v:'b',k:134,c:1608},'pārbaudes darbs'],['u4',{kind:'unk',form:'dv',v:'x',k:420,c:70},'gatavošanās'],
   ['u5',{kind:'unk',form:'dd',v:'t',k:90,c:9},'gatavošanās'],['u6',{kind:'unk',form:'dd',v:'b',k:17,c:391},'gatavošanās'],
-  ['u7',{kind:'unk',form:'dv',v:'k',k:560,c:80},'gatavošanās'],['u8',{kind:'unk',form:'f2',v:'a',k:12,c:156},'gatavošanās']]}];
-const specLabel=sp=>sp.kind==='mul'?`${sp.a} · ${sp.b}`:sp.kind==='div'?`${sp.D} : ${sp.q}`:sp.kind==='unk'?unkEq(sp):sp.text;
+  ['u7',{kind:'unk',form:'dv',v:'k',k:560,c:80},'gatavošanās'],['u8',{kind:'unk',form:'f2',v:'a',k:12,c:156},'gatavošanās']]},
+ {grp:'Kāpināšana — grāmata 84. lpp., 65. uzd. „Aprēķini”',items:[
+  ['k1',()=>orderSpec('348 · 4 + 6 − 7²','kāpināšanu',[['7² = ?',49,'= 348 · 4 + 6 − 49'],['348 · 4 = ?',1392,'= 1392 + 6 − 49'],['1392 + 6 = ?',1398,'= 1398 − 49'],['1398 − 49 = ?',1349,'= 1349']],'Iekavu nav, tāpēc vispirms 7². Tad reizināšana, beigās + un − no kreisās uz labo.'),'65. a)'],
+  ['k2',()=>orderSpec('348 · (4 + 6) − 7²','darbību iekavās',[['4 + 6 = ?',10,'= 348 · 10 − 7²'],['7² = ?',49,'= 348 · 10 − 49'],['348 · 10 = ?',3480,'= 3480 − 49'],['3480 − 49 = ?',3431,'= 3431']],'Iekavas pirmās! Tad 7², tad reizināšana, beigās atņemšana.'),'65. b)'],
+  ['k3',()=>orderSpec('3³ + 3 · 247 − 17','kāpināšanu',[['3³ = ?',27,'= 27 + 3 · 247 − 17'],['3 · 247 = ?',741,'= 27 + 741 − 17'],['27 + 741 = ?',768,'= 768 − 17'],['768 − 17 = ?',751,'= 751']],'Vispirms 3³, tad 3 · 247, beigās + un −.'),'65. c)'],
+  ['k4',()=>orderSpec('(3³ + 3) · 247 − 17','darbību iekavās',[['3³ = ?',27,'= (27 + 3) · 247 − 17'],['27 + 3 = ?',30,'= 30 · 247 − 17'],['30 · 247 = ?',7410,'= 7410 − 17'],['7410 − 17 = ?',7393,'= 7393']],'Iekavas pirmās. Arī iekavās ievēro secību: vispirms 3³, tad + 3.'),'65. d)'],
+  ['k5',()=>orderSpec('3³ + 3 · (247 − 17)','darbību iekavās',[['247 − 17 = ?',230,'= 3³ + 3 · 230'],['3³ = ?',27,'= 27 + 3 · 230'],['3 · 230 = ?',690,'= 27 + 690'],['27 + 690 = ?',717,'= 717']],'Iekavas pirmās, tad 3³, tad reizināšana, beigās saskaitīšana.'),'65. e)'],
+  ['k6',()=>orderSpec('(3³ + 3) · (247 − 17)','darbību iekavās',[['3³ = ?',27,'= (27 + 3) · (247 − 17)'],['27 + 3 = ?',30,'= 30 · (247 − 17)'],['247 − 17 = ?',230,'= 30 · 230'],['30 · 230 = ?',6900,'= 6900']],'Vispirms abas iekavas (pirmajās — sākumā 3³), tad reizina.'),'65. f)']]},
+ {grp:'Grāmata 84. lpp., 66. uzd. — kā iekavas maina atbildi',items:[
+  ['k7',()=>orderSpec('2² + 6 · 146 − 76','kāpināšanu',[['2² = ?',4,'= 4 + 6 · 146 − 76'],['6 · 146 = ?',876,'= 4 + 876 − 76'],['4 + 876 = ?',880,'= 880 − 76'],['880 − 76 = ?',804,'= 804']],'Bez iekavām: 2², tad reizināšana, tad + un −.'),'66. bez iekavām'],
+  ['k8',()=>orderSpec('(2² + 6) · 146 − 76','darbību iekavās',[['2² = ?',4,'= (4 + 6) · 146 − 76'],['4 + 6 = ?',10,'= 10 · 146 − 76'],['10 · 146 = ?',1460,'= 1460 − 76'],['1460 − 76 = ?',1384,'= 1384']],'Iekavas pirmās, iekavās vispirms 2².'),'66. 1. piemērs'],
+  ['k9',()=>orderSpec('2² + 6 · (146 − 76)','darbību iekavās',[['146 − 76 = ?',70,'= 2² + 6 · 70'],['2² = ?',4,'= 4 + 6 · 70'],['6 · 70 = ?',420,'= 4 + 420'],['4 + 420 = ?',424,'= 424']],'Iekavas pirmās, tad 2², tad reizināšana, beigās saskaitīšana.'),'66. 2. piemērs'],
+  ['k10',()=>orderSpec('(2² + 6) · (146 − 76)','darbību iekavās',[['2² = ?',4,'= (4 + 6) · (146 − 76)'],['4 + 6 = ?',10,'= 10 · (146 − 76)'],['146 − 76 = ?',70,'= 10 · 70'],['10 · 70 = ?',700,'= 700']],'Abas iekavas pirmās, tad reizina.'),'66. 3. piemērs']]}];
+const specLabel=sp=>sp.kind==='mul'?`${sp.a} · ${sp.b}`:sp.kind==='div'?`${sp.D} : ${sp.q}`:sp.kind==='unk'?unkEq(sp):(sp.kind==='pow'||sp.kind==='fac')?sp.head.replace(' = ?',''):sp.text;
 const topicOf=sp=>sp.kind;
 
 /* ================= skati ================= */
@@ -798,7 +1029,7 @@ function viewHome(){
   KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
   const h=el('div','hero');
   const last=S.tests[S.tests.length-1];
-  h.innerHTML=`<b>Sveika!</b> Šeit trenējamies reizināt un dalīt rakstos, uzrakstīt izteiksmes un atrast nezināmo skaitli. Katru uzdevumu risini <b>pa solim</b>, rūtiņu pa rūtiņai — tieši tā, kā to raksta burtnīcā. Pūcīte 🦉 pateiks, ko darīt.`+
+  h.innerHTML=`<b>Sveika!</b> Šeit trenējamies reizināt un dalīt rakstos, uzrakstīt izteiksmes, atrast nezināmo skaitli, <b>kāpināt</b> 🚀 un <b>sadalīt pirmreizinātājos</b> 🧩. Katru uzdevumu risini <b>pa solim</b>, rūtiņu pa rūtiņai — tieši tā, kā to raksta burtnīcā. Pūcīte 🦉 pateiks, ko darīt.`+
     (last?`<div class="muted" style="margin-top:6px">Pēdējais pārbaudes darbs: <b>${last.pts}/13</b> (${Math.round(last.pts/13*100)}%), ${last.date}</div>`:'');
   main.appendChild(forestCard());
   main.appendChild(h);
@@ -809,10 +1040,13 @@ function viewHome(){
     const t=el('button','tile');t.innerHTML=`<div class="ico">${T.ico}</div><div class="t">${T.name}</div><div class="s">Atrisināti: ${S.solved[key]||0}</div>`;
     t.onclick=()=>viewPractice(key);tiles.appendChild(t);});
   const sc=el('button','tile');const doneN=Object.keys(S.done).length,totN=SCHOOL.reduce((a,g)=>a+g.items.length,0);
-  sc.innerHTML=`<div class="ico">🏫</div><div class="t">Skolas uzdevumi</div><div class="s">No pārbaudes darba un gatavošanās lapas · ${doneN}/${totN}</div>`;
+  sc.innerHTML=`<div class="ico">🏫</div><div class="t">Skolas uzdevumi</div><div class="s">Pārbaudes darbs, gatavošanās lapa, grāmata · ${doneN}/${totN}</div>`;
   sc.onclick=viewSchool;tiles.appendChild(sc);
   const ts=el('button','tile');ts.innerHTML=`<div class="ico">📝</div><div class="t">Pārbaudes darbs</div><div class="s">Kā skolā: 10 uzdevumi, 13 punkti, bez padomiem</div>`;
   ts.onclick=viewTest;tiles.appendChild(ts);
+  const pt=el('button','tile');const lp=store.get('powTests',[]).slice(-1)[0];
+  pt.innerHTML=`<div class="ico">🚀</div><div class="t">Kāpināšana: formatīvais darbs</div><div class="s">10 uzdevumi bez padomiem${lp?` · pēdējais: ${lp.pts}/10`:''}</div>`;
+  pt.onclick=viewPowTest;tiles.appendChild(pt);
   main.appendChild(tiles);
 }
 
@@ -828,6 +1062,8 @@ function viewHelp(){
 <li>Augšā izvēlies grūtību: <b>Iesildīšanās</b> → <b>Vidēji</b> → <b>Kā pārbaudes darbā</b>. Sāc ar vieglāko!</li>
 <li><b>🏫 Skolas uzdevumi</b> — tieši tie uzdevumi, kas bija tavā pārbaudes darbā un gatavošanās lapā.</li>
 <li><b>📝 Pārbaudes darbs</b> — pamēģini, kā tev sanāk bez palīdzības.</li>
+<li><b>🚀 Kāpināšana</b> — pakāpes, kvadrāti, kubi, darbību secība. Kad jūties droša, pamēģini <b>🚀 Kāpināšana: formatīvais darbs</b>.</li>
+<li><b>🧩 Reizinātāji un pirmreizinātāji</b> — pirmskaitļi, skaitlis kā reizinājums dažādos veidos, sadalīšana pirmreizinātājos stabiņā.</li>
 </ul>
 <h2>2. Kā rakstīt ciparus</h2>
 <ul>
@@ -897,7 +1133,7 @@ function viewPractice(topic,queue,opts={}){
 function viewSchool(){
   KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
   topbar('Skolas uzdevumi');
-  main.appendChild(el('p','muted','Visi uzdevumi no šodienas pārbaudes darba un gatavošanās lapas. Izvēlies uzdevumu un risini soli pa solim.'));
+  main.appendChild(el('p','muted','Uzdevumi no pārbaudes darba, gatavošanās lapas un mācību grāmatas. Izvēlies uzdevumu un risini soli pa solim.'));
   SCHOOL.forEach(g=>{
     main.appendChild(el('h2','',g.grp));
     const list=el('div','list');
@@ -946,6 +1182,40 @@ function viewTest(){
     if(wrong.length){host.appendChild(el('p','',`Kļūdas bija ${wrong.length} uzdevumos. Izrisini tos vēlreiz soli pa solim — tā labāk iemācīsies!`));
       host.appendChild(btn('🦉 Mācīties kļūdas soli pa solim','primary',()=>viewPractice(null,wrong.map(s=>{const c=JSON.parse(JSON.stringify(s));if(c.kind==='expr')delete c.testStep;return c;}),{back:viewHome})));}
     else host.appendChild(el('p','','Visi uzdevumi pareizi — lieliski! 🎉'));
+    host.appendChild(document.createTextNode(' '));host.appendChild(btn('Uz sākumu','',viewHome));
+  }
+}
+
+function viewPowTest(){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  topbar('Kāpināšana: formatīvais darbs');
+  const host=el('div');main.appendChild(host);
+  const specs=[powWrite(0),powWrite(1),powCalc(0),powCalc(1),powCalc(2),powOrder(1),powOrder(1),powOrder(2),powCmp(),powExp(1)];
+  const groups=[['Pierakstu reizinājumu kā pakāpi',[0,1]],['Aprēķinu pakāpes vērtību',[2,3,4]],['Ievēroju darbību secību',[5,6,7]],['Salīdzinu pakāpes un atrodu nezināmo',[8,9]]];
+  const kept=specs.map(s=>JSON.parse(JSON.stringify(s)));
+  const results=[];let i=0;
+  const intro=el('div','hero');intro.innerHTML='Gatavojamies formatīvajam darbam par kāpināšanu: <b>10 uzdevumi, 10 punkti</b>. Padomu nav, katrai atbildei viens mēģinājums. Ja aizmirsti likumu — vispirms paskaties <b>🚀 Kāpināšana → 📖 Kā to dara?</b>';
+  host.appendChild(intro);host.appendChild(btn('Sākt ▶','primary',run));
+  function run(){
+    host.innerHTML='';window.scrollTo(0,0);
+    host.appendChild(el('div','progress',`Uzdevums ${i+1} no ${specs.length}`));
+    runSpec(specs[i],host,'free',r=>{results[i]=r.pow?1:0;
+      host.appendChild(btn(i<specs.length-1?'Tālāk →':'Rādīt rezultātu','primary',()=>{i++;i<specs.length?run():summary();}));});
+  }
+  function summary(){
+    host.innerHTML='';window.scrollTo(0,0);
+    const pts=results.reduce((a,b)=>a+b,0),pct=pts*10;
+    const hist=store.get('powTests',[]);hist.push({date:new Date().toLocaleDateString('lv-LV'),pts});store.set('powTests',hist);
+    addStars(pts,true);if(pct>=70)confetti(40);
+    const tag=(p,m)=>p===m?'<span class="tag g">Protu</span>':p*2>=m?'<span class="tag y">Protu daļēji</span>':'<span class="tag r">Vēl jāmācās</span>';
+    const b=el('div','done-banner');b.innerHTML=`<div class="big">${pts} / 10</div><div><b>${pct}%</b></div>`;host.appendChild(b);
+    const t=el('table','res');
+    t.innerHTML='<tr><th>Prasme</th><th>Punkti</th><th></th></tr>'+groups.map(([n,ix],k)=>{const p=ix.reduce((a,j)=>a+results[j],0);return `<tr><td>${k+1}. ${n}</td><td class="c">${p}/${ix.length}</td><td>${tag(p,ix.length)}</td></tr>`;}).join('');
+    host.appendChild(t);
+    const wrong=kept.filter((s,j)=>!results[j]);
+    if(wrong.length){host.appendChild(el('p','',`Kļūdas bija ${wrong.length} uzdevumos. Izrisini tos vēlreiz soli pa solim!`));
+      host.appendChild(btn('🦉 Mācīties kļūdas soli pa solim','primary',()=>viewPractice(null,wrong,{back:viewHome})));}
+    else host.appendChild(el('p','','Visi uzdevumi pareizi — formatīvajam darbam esi gatava! 🎉'));
     host.appendChild(document.createTextNode(' '));host.appendChild(btn('Uz sākumu','',viewHome));
   }
 }
