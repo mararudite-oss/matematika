@@ -109,6 +109,23 @@ details.lesson li{margin:4px 0}
 .opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
 .opt:disabled{cursor:default}
 .result{margin-top:12px;font-size:20px;text-align:center}
+.cheat{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:12px 16px;margin:12px 0;scroll-margin-top:10px}
+.cheat h3{margin:0 0 8px;font-size:22px}.cheat p{margin:8px 0}
+.defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px}.defs>div{background:var(--tip-bg);border-radius:12px;padding:6px 10px}
+.hundred{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:440px;font-variant-numeric:tabular-nums}
+.hundred span{text-align:center;border-radius:6px;padding:3px 0;font-size:15px;background:var(--bg);color:var(--muted)}
+.hundred span.pr{background:var(--accent);color:#fff;font-weight:800}.hundred span.one{background:var(--line)}
+.ctw{overflow-x:auto;margin:8px 0}
+table.ct{border-collapse:collapse;font-size:16px;width:100%}table.ct th,table.ct td{border:1px solid var(--line);padding:5px 8px;text-align:left;white-space:nowrap}table.ct th{background:var(--tip-bg)}
+.cheat>table.ct{display:block;overflow-x:auto}
+.steps{background:var(--ok-bg);border-radius:14px;padding:8px 14px;margin:8px 0}.steps ol{margin:6px 0;padding-left:22px}
+.tip{background:var(--hl);border-radius:12px;padding:6px 12px}
+.pairs{background:var(--tip-bg);border-radius:12px;padding:8px 12px;font-variant-numeric:tabular-nums}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+pre.colm{background:var(--bg);border:2px solid var(--grid);border-radius:10px;padding:8px 12px;font-size:18px;font-weight:800;line-height:1.35;margin:6px 0;overflow-x:auto}
+.wrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.wbox.big{font-size:40px;font-weight:800;background:var(--tip-bg);border-radius:14px;padding:4px 16px}
+.ladder{display:flex;flex-direction:column;gap:4px;max-width:420px}.ladder div{background:var(--tip-bg);border-radius:10px;padding:6px 12px}
+.ladder div:nth-child(1){margin-left:0}.ladder div:nth-child(2){margin-left:16px}.ladder div:nth-child(3){margin-left:32px}.ladder div:nth-child(4){margin-left:48px}
 .pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;margin:8px 0}
 .pnum{font:inherit;font-size:20px;font-weight:800;height:48px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
 .pnum.on{background:var(--blue);border-color:var(--blue);color:#fff}
@@ -1150,6 +1167,113 @@ const SCHOOL=[
 const specLabel=sp=>sp.kind==='mul'?`${sp.a} · ${sp.b}`:sp.kind==='div'?`${sp.D} : ${sp.q}`:sp.kind==='unk'?unkEq(sp):(sp.kind==='pow'||sp.kind==='fac')?sp.head.replace(' = ?',''):sp.text;
 const topicOf=sp=>sp.kind;
 
+/* ================= špikeris ================= */
+function viewCheat(back,focus){
+  KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
+  topbar('🧠 Špikeris',back);
+  const nav=el('div','levels');main.appendChild(nav);
+  const secs=[];
+  const sec=(id,t,h)=>{const d=el('section','cheat');d.id='ch_'+id;d.innerHTML=`<h3>${t}</h3>${h}`;main.appendChild(d);secs.push([id,t]);};
+  const sq=Array.from({length:15},(_,i)=>i+1);
+
+  sec('fac','🧩 Pirmskaitļi, dalītāji, pirmreizinātāji',`
+  <div class="defs">
+   <div><b>Dalītājs</b> — skaitlis, ar kuru dala <u>bez atlikuma</u>. 12 dalītāji: 1, 2, 3, 4, 6, 12.</div>
+   <div><b>Pirmskaitlis</b> — tieši <u>2 dalītāji</u>: 1 un pats skaitlis. 13 = tikai 1 · 13.</div>
+   <div><b>Salikts skaitlis</b> — <u>vairāk nekā 2</u> dalītāji. 12 = 2 · 6 = 3 · 4.</div>
+   <div>⚠️ <b>1</b> nav ne pirmskaitlis, ne salikts. <b>2</b> ir vienīgais pāra pirmskaitlis.</div></div>
+  <p><b>Pirmskaitļi līdz 100</b> (iekrāsotie):</p>
+  <div class="hundred">${Array.from({length:100},(_,i)=>i+1).map(n=>`<span class="${n===1?'one':isPrime(n)?'pr':''}">${n}</span>`).join('')}</div>
+  <p class="tip">💡 Iegaumē: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 — 25 pirmskaitļi.</p>
+  <p><b>Dalāmības pazīmes</b> — kā ātri pārbaudīt, ar ko skaitlis dalās:</p>
+  <table class="ct"><tr><th>Dalās ar…</th><th>ja…</th><th>Piemērs</th></tr>
+   <tr><td><b>2</b></td><td>pēdējais cipars ir pāra (0, 2, 4, 6, 8)</td><td>31<b>6</b> ✓</td></tr>
+   <tr><td><b>3</b></td><td>ciparu summa dalās ar 3</td><td>51 → 5 + 1 = 6 ✓ (51 = 3 · 17)</td></tr>
+   <tr><td><b>4</b></td><td>pēdējo divu ciparu skaitlis dalās ar 4</td><td>1<b>24</b> → 24 : 4 ✓</td></tr>
+   <tr><td><b>5</b></td><td>beidzas ar 0 vai 5</td><td>20<b>25</b> ✓</td></tr>
+   <tr><td><b>9</b></td><td>ciparu summa dalās ar 9</td><td>2025 → 2+0+2+5 = 9 ✓</td></tr>
+   <tr><td><b>10</b></td><td>beidzas ar 0</td><td>31<b>0</b> ✓</td></tr>
+   <tr><td><b>7, 11, 13…</b></td><td>pazīmes nav — vienkārši izdali</td><td>91 : 7 = 13 ✓</td></tr></table>
+  <div class="steps"><b>Vai skaitlis ir pirmskaitlis? — 3 soļi</b><ol>
+   <li>Vai pāra skaitlis? Beidzas ar 0 vai 5? → <b>salikts</b> (izņemot 2 un 5).</li>
+   <li>Ciparu summa dalās ar 3? → <b>salikts</b> (243 → 9 → dalās ar 3).</li>
+   <li>Pamēģini dalīt ar 7, 11, 13… — pietiek pārbaudīt pirmskaitļus, kuru kvadrāts nav lielāks par skaitli (97: 7 · 7 = 49, 11 · 11 = 121 &gt; 97 → pārbaudi tikai 2, 3, 5, 7). Neviens neder → <b>pirmskaitlis</b>.</li></ol></div>
+  <p><b>Visi dalītāji</b> — meklē <b>pāros</b>, sākot no 1, līdz pāri sāk atkārtoties:</p>
+  <div class="pairs">36 = <b>1 · 36</b> = <b>2 · 18</b> = <b>3 · 12</b> = <b>4 · 9</b> = <b>6 · 6</b> → 1, 2, 3, 4, 6, 9, 12, 18, 36 (9 dalītāji)</div>
+  <p><b>Sadalīt pirmreizinātājos</b> = uzrakstīt kā reizinājumu, kurā <u>visi</u> reizinātāji ir pirmskaitļi. Ir divi veidi — rezultāts vienāds!</p>
+  <div class="two-col">
+   <div><b>A) Stabiņā</b><br>pa labi — mazākais pirmskaitlis, ar ko dalās; zem — dalījums; līdz kreisajā pusē 1.
+    <pre class="colm">84 | 2
+42 | 2
+21 | 3
+ 7 | 7
+ 1 |</pre>84 = 2 · 2 · 3 · 7 = 2² · 3 · 7</div>
+   <div><b>B) Reizinātāju koks</b><br>dala jebkuros divos reizinātājos, katru zaru — tālāk, līdz apakšā tikai pirmskaitļi.
+    <pre class="colm">       140
+      /   \\
+    14     10
+   /  \\   /  \\
+  2    7  2   5</pre>140 = 2² · 5 · 7</div></div>
+  <p>Vienādos reizinātājus pieraksta ar <b>pakāpi</b>: 2 · 2 · 2 = 2³. Secība nav svarīga, bet parasti raksta no mazākā.</p>`);
+
+  sec('pow','🚀 Kāpināšana',`
+  <div class="wrow"><span class="wbox big">2<sup>5</sup></span><span>= 2 · 2 · 2 · 2 · 2 = 32 &nbsp;·&nbsp; <b>2</b> — bāze (ko reizina), <b>5</b> — kāpinātājs (cik reizes), 2<sup>5</sup> — pakāpe</span></div>
+  <p>⚠️ <b>3<sup>4</sup> ≠ 3 · 4!</b> 3<sup>4</sup> = 3 · 3 · 3 · 3 = 81. &nbsp; a<sup>1</sup> = a · 1<sup>n</sup> = 1 · 0<sup>n</sup> = 0 · 10<sup>n</sup> = 1 ar n nullēm.</p>
+  <p>a<sup>2</sup> — <b>kvadrāts</b>, a<sup>3</sup> — <b>kubs</b>.</p>
+  <div class="ctw"><table class="ct"><tr><th>n</th>${sq.map(n=>`<th>${n}</th>`).join('')}</tr>
+   <tr><td><b>n²</b></td>${sq.map(n=>`<td>${n*n}</td>`).join('')}</tr>
+   <tr><td><b>n³</b></td>${sq.map(n=>`<td>${n<=10?n**3:''}</td>`).join('')}</tr></table></div>
+  <div class="ctw"><table class="ct"><tr><th>2ⁿ</th>${Array.from({length:10},(_,i)=>`<td>2<sup>${i+1}</sup> = ${2**(i+1)}</td>`).join('')}</tr>
+   <tr><th>3ⁿ</th>${Array.from({length:5},(_,i)=>`<td>3<sup>${i+1}</sup> = ${3**(i+1)}</td>`).join('')}<td colspan="5"></td></tr></table></div>`);
+
+  sec('order','🔢 Darbību secība',`
+  <div class="ladder"><div>1. ( ) <b>iekavas</b></div><div>2. x<sup>n</sup> <b>kāpināšana</b></div><div>3. · un : <b>no kreisās uz labo</b></div><div>4. + un − <b>no kreisās uz labo</b></div></div>
+  <p>2 · 3<sup>2</sup> = 2 · 9 = <b>18</b>, bet (2 · 3)<sup>2</sup> = 6<sup>2</sup> = <b>36</b>.<br>
+  348 · (4 + 6) − 7<sup>2</sup> → 4 + 6 = 10 → 7<sup>2</sup> = 49 → 348 · 10 = 3480 → 3480 − 49 = <b>3431</b></p>`);
+
+  sec('mul','✖️ Reizināšana rakstos',`
+  <p><b>a · b = c</b> → a un b — <b>reizinātāji</b>, c — <b>reizinājums</b>.</p>
+  <div class="two-col"><div><pre class="colm">    346
+  ×  27
+  -----
+   2422   ← 346 · 7
+  692     ← 346 · 2 (nobīdīts!)
+  -----
+   9342</pre></div>
+  <div><ol><li>Vieni zem vieniem.</li><li>Reizini ar apakšējā skaitļa <b>pēdējo</b> ciparu, sāc no labās.</li><li>Desmitus <b>paturi atmiņā</b>.</li><li>Nākamo rindu sāc <b>vienu rūtiņu pa kreisi</b>.</li><li>Ja apakšā ir 0 — rindu izlaid, nobīdi vēl.</li><li>Rindas <b>saskaiti</b>.</li></ol></div></div>`);
+
+  sec('div','➗ Dalīšana stūrītī',`
+  <p><b>a : b = c</b> → a — <b>dalāmais</b>, b — <b>dalītājs</b>, c — <b>dalījums</b>. Ja paliek pāri — <b>atlikums</b> (tam jābūt mazākam par dalītāju!).</p>
+  <div class="steps"><b>Cikls: Dali → Reizini → Atņem → Nones</b> (atkārto)<ol>
+   <li>Pirmais nepilnais dalāmais — ņem ciparus no kreisās, līdz skaitlis ≥ dalītājs.</li><li>Cik reizes ietilpst? Raksti dalījumā.</li><li>Reizini un raksti zem.</li><li>Atņem.</li><li>Nones nākamo ciparu. Ja neietilpst — dalījumā <b>0</b>!</li></ol>
+   <b>Pārbaude:</b> dalījums · dalītājs + atlikums = dalāmais.</div>`);
+
+  sec('unk','❓ Nezināmais skaitlis',`
+  <div class="ctw"><table class="ct"><tr><th>Nezinu…</th><th>Kā atrast</th><th>Piemērs</th></tr>
+   <tr><td>reizinātāju</td><td>reizinājums <b>:</b> zināmais reizinātājs</td><td>a · 56 = 1344 → a = 1344 : 56 = 24</td></tr>
+   <tr><td>dalāmo</td><td>dalījums <b>·</b> dalītājs</td><td>b : 134 = 12 → b = 12 · 134 = 1608</td></tr>
+   <tr><td>dalītāju</td><td>dalāmais <b>:</b> dalījums</td><td>342 : x = 9 → x = 342 : 9 = 38</td></tr></table></div>
+  <p class="tip">💡 Aizmirsi? Izmēģini ar maziem skaitļiem: 12 : 3 = 4. Ja nezinātu 12 → 4 · 3. Ja nezinātu 3 → 12 : 4.</p>`);
+
+  sec('expr','✏️ Izteiksmes no teksta',`
+  <div class="ctw"><table class="ct"><tr><th>Teksts saka…</th><th>Darbība</th></tr>
+   <tr><td>kopā, vēl, iekāpa, par … vairāk</td><td><b>+</b></td></tr>
+   <tr><td>par cik vairāk / mazāk, atliek, palika, izkāpa</td><td><b>−</b></td></tr>
+   <tr><td>katrs pa…, vairāki vienādi, … reizes vairāk</td><td><b>·</b></td></tr>
+   <tr><td>sadala vienādi, cik reižu, viena cena, cik var nopirkt</td><td><b>:</b></td></tr></table></div>
+  <p>Burts = skaitlis, ko vēl nezinām. 3 pildspalvas pa <i>a</i> centiem = <b>3 · a</b>.</p>`);
+
+  sec('words','📚 Vārdi, kas jāzina',`
+  <div class="defs">
+   <div><b>Saskaitāmie</b> + → <b>summa</b></div><div><b>Mazināmais</b> − <b>mazinātājs</b> = <b>starpība</b></div>
+   <div><b>Reizinātāji</b> · → <b>reizinājums</b></div><div><b>Dalāmais</b> : <b>dalītājs</b> = <b>dalījums</b> (+ atlikums)</div>
+   <div><b>Bāze</b><sup>kāpinātājs</sup> = <b>pakāpe</b></div><div><b>Pirmskaitlis</b> / <b>salikts skaitlis</b> / <b>pirmreizinātāji</b></div></div>`);
+
+  secs.forEach(([id,t])=>{const c=el('button','chip',t.split(' ').slice(1).join(' '));c.onclick=()=>document.getElementById('ch_'+id).scrollIntoView({behavior:'smooth'});nav.appendChild(c);});
+  main.appendChild(btn('Uz sākumu','',viewHome));
+  if(focus)setTimeout(()=>{const e=document.getElementById('ch_'+focus);if(e)e.scrollIntoView();},30);
+}
+
 /* ================= skati ================= */
 const main=$('#main');
 function topbar(title,back){const t=el('div','topbar');t.appendChild(btn('← Atpakaļ','small',back||viewHome));t.appendChild(el('h2','',title));main.appendChild(t);}
@@ -1165,6 +1289,8 @@ function viewHome(){
   const tiles=el('div','tiles');
   const hp=el('button','tile wide');hp.innerHTML=`<div class="t">❓ Kā spēlēt? — izlasi vispirms!</div><div class="s">Īsa pamācība: kā rakstīt ciparus, ko nozīmē krāsas, kā saņemt padomu</div>`;
   hp.onclick=viewHelp;tiles.appendChild(hp);
+  const ch=el('button','tile wide');ch.innerHTML=`<div class="t">🧠 Špikeris — visi likumi vienuviet</div><div class="s">Pirmskaitļi līdz 100, dalāmības pazīmes, pirmreizinātāji, kāpināšana, darbību secība, reizināšana un dalīšana rakstos</div>`;
+  ch.onclick=()=>viewCheat();tiles.appendChild(ch);
   Object.entries(TOPICS).forEach(([key,T])=>{
     const t=el('button','tile');t.innerHTML=`<div class="ico">${T.ico}</div><div class="t">${T.name}</div><div class="s">Atrisināti: ${S.solved[key]||0}</div>`;
     t.onclick=()=>viewPractice(key);tiles.appendChild(t);});
@@ -1238,7 +1364,7 @@ function viewPractice(topic,queue,opts={}){
   KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
   const T=topic?TOPICS[topic]:null;
   topbar(T?T.name:'Kļūdu labošana',opts.back);
-  if(T){const d=el('details','lesson');d.innerHTML=`<summary>📖 Kā to dara?</summary>${LESSON[topic]}`;main.appendChild(d);}
+  if(T){const d=el('details','lesson');d.innerHTML=`<summary>📖 Kā to dara?</summary>${LESSON[topic]}`;const cb=btn('🧠 Atvērt špikeri','small',()=>viewCheat(()=>viewPractice(topic),topic));cb.style.marginTop='6px';d.appendChild(cb);main.appendChild(d);}
   let level=store.get('lvl_'+topic,1);
   if(T&&T.levels&&!queue){
     const lv=el('div','levels');
