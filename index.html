@@ -109,6 +109,12 @@ details.lesson li{margin:4px 0}
 .opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
 .opt:disabled{cursor:default}
 .result{margin-top:12px;font-size:20px;text-align:center}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;margin:8px 0}
+.pnum{font:inherit;font-size:20px;font-weight:800;height:48px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.pnum.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.pnum.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.pnum.miss{border:3px dashed var(--ok)}
+.pnum:disabled{cursor:default}
 .done-banner{background:var(--ok-bg);border-radius:18px;padding:16px;text-align:center;margin-bottom:14px}
 .done-banner .big{font-size:40px}
 .done-banner .btn{margin-top:10px}
@@ -631,6 +637,27 @@ function numInput(host,expected,mode,hintText,onDone){
   const obs=new MutationObserver(()=>{if(fb.textContent)fb.style.display='';});obs.observe(fb,{childList:true,characterData:true,subtree:true});
 }
 
+function pickInput(host,s,free,onDone){
+  KEYS.h=null;
+  const grid=el('div','pick-grid');if(s.grid)grid.style.gridTemplateColumns=`repeat(auto-fill,minmax(${s.grid>6?48:56}px,1fr))`;
+  const sel=new Set(),good=new Set(s.correct);let mistakes=0,att=0,fin=false;
+  const bs=s.nums.map(n=>{const b=el('button','pnum',String(n));b.onclick=()=>{if(fin)return;sel.has(n)?sel.delete(n):sel.add(n);b.classList.toggle('on',sel.has(n));b.classList.remove('wrong','miss');};grid.appendChild(b);return b;});
+  const fb=el('div','hint');
+  if(S.learn&&!free)fb.innerHTML='<span class="owl">🦉</span>Spied uz skaitļiem, lai tos atzīmētu. Kad gatavs — „Pārbaudīt”.';else fb.style.display='none';
+  const go=btn('Pārbaudīt ✓','primary',()=>{
+    if(fin)return;
+    const extra=[...sel].filter(n=>!good.has(n)),miss=[...good].filter(n=>!sel.has(n));
+    if(!extra.length&&!miss.length){fin=true;go.remove();bs.forEach(b=>b.disabled=true);fb.style.display='';fb.className='hint okk';fb.textContent='✓ Pareizi!';onDone({ok:true,mistakes});return;}
+    if(free){fin=true;go.remove();bs.forEach((b,i)=>{const n=s.nums[i];b.disabled=true;if(good.has(n))b.classList.add(sel.has(n)?'on':'miss');else if(sel.has(n))b.classList.add('wrong');});
+      fb.style.display='';fb.className='hint err';fb.textContent='✗ Pareizi: '+s.correct.join(', ');onDone({ok:false});return;}
+    mistakes++;att++;
+    bs.forEach((b,i)=>{const n=s.nums[i];if(sel.has(n)&&!good.has(n))b.classList.add('wrong');if(att>=2&&miss.includes(n))b.classList.add('miss');});
+    fb.style.display='';fb.className='hint err';
+    fb.textContent='🤔 '+(extra.length?`Sarkanie (${extra.join(', ')}) nav pareizi — noņem tos. `:'')+(miss.length?`Vēl trūkst ${miss.length}${att>=2?' (iezīmēti ar punktotu rāmi)':''}. `:'')+s.hint;});
+  const row=el('div','row-actions');row.appendChild(go);
+  host.append(grid,row,fb);
+}
+
 function runUnk(sp,host,mode,done){
   const E=unkEq(sp),I=unkInfo(sp),ans=unkAns(sp),free=mode==='free';
   const card=el('div','task');host.appendChild(card);
@@ -871,22 +898,105 @@ function facPairs(l){
 function facColumn(l){
   let N;const P=l===0?[2,2,3,3,5]:l===1?[2,2,3,3,5,7]:[2,2,3,5,7,11,13];
   do{N=1;const k=l===0?rnd(3,4):l===1?rnd(3,5):rnd(4,6);for(let i=0;i<k;i++)N*=pick(P);}while(N<(l===0?12:l===1?40:100)||N>(l===0?120:l===1?500:2000)||isPrime(N));
+  return facColumnN(N);
+}
+function facColumnN(N){
   const steps=[];let m=N;
   while(m>1){const p=minPF(m);
-    steps.push({t:'num',q:`Ar kādu mazāko pirmskaitli dalās ${m}?`,ans:p,hint:m===p?`${m} ir pirmskaitlis — to dala ar sevi.`:DIVHINT,after:null});
+    steps.push({t:'num',q:`Ar kādu mazāko pirmskaitli dalās ${m}?`,ans:p,hint:m===p?(m>50?`${m} nedalās ne ar 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 — tas ir pirmskaitlis, to dala ar sevi.`:`${m} ir pirmskaitlis — to dala ar sevi.`):DIVHINT,after:null});
     steps.push({t:'num',q:`${m} : ${p} = ?`,ans:m/p,hint:`Izrēķini ${m} : ${p}.`,after:`${m} | ${p}`});m/=p;}
   steps[steps.length-1].after+='\n1 |';
   const res=pfPow(N),list=pfList(N),c={};list.forEach(p=>c[p]=(c[p]||0)+1);
   const ks=Object.keys(c),wr=new Set();
   wr.add(ks.map(p=>pwx(+p,c[p]+1)).join(' · '));
   if(ks.length>1)wr.add(ks.map((p,i)=>pwx(+p,c[ks[(i+1)%ks.length]])).join(' · '));
-  if(N%4===0)wr.add(`4 · ${N/4}`);else if(N%9===0)wr.add(`9 · ${N/9}`);else wr.add(`${list[0]} · ${N/list[0]}`);
+  if(N%4===0)wr.add(`4 · ${N/4}`);else if(N%9===0)wr.add(`9 · ${N/9}`);else if(!isPrime(N/list[0]))wr.add(`${list[0]} · ${N/list[0]}`);
+  wr.delete(res);
+  if(wr.size<2&&ks.length===1&&c[ks[0]]>1)wr.add(`${ks[0]} · ${c[ks[0]]}`);
+  if(wr.size<2)wr.add(list.length<=4?list.join(' + '):`${list[0]} · ${N/list[0]+1}`);
   wr.delete(res);
   steps.push(mcStep(`Kā pieraksta ${N} sadalījumu pirmreizinātājos?`,res,[...wr].slice(0,2),{explain:`Labajā pusē stabiņā ir ${list.join(', ')}. Vienādos pieraksta ar pakāpi.`,
     hint:'Saskaiti, cik reizes stabiņa labajā pusē ir katrs pirmskaitlis — tas ir kāpinātājs.',after:`${N} = ${list.join(' · ')} = ${res}`,test:1}));
   return{kind:'fac',title:'Sadali pirmreizinātājos (stabiņā)',head:`${N} = ?`,story:null,steps};
 }
-function genFac(l){return pick(l===0?[facPrime,facPrime,facPairs,facColumn]:l===1?[facPrime,facPairs,facColumn,facColumn]:[facPrime,facPairs,facColumn,facColumn,powFact])(l);}
+/* --- jaunie: atzīmē skaitļus, dalītāji, patiess/aplams, reizinājums, koks --- */
+const rangeArr=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const divisors=n=>rangeArr(1,n).filter(d=>n%d===0);
+const primesIn=(a,b)=>rangeArr(a,b).filter(isPrime);
+function pickStep(q,nums,correct,hint,after,o={}){return Object.assign({t:'pick',q,nums,correct,hint,after,test:1},o);}
+function facPickPrimes(l,a,b){
+  if(a==null){[a,b]=pick(l===0?[[1,9],[1,20],[15,30],[20,35]]:l===1?[[15,30],[30,45],[40,60],[60,75]]:[[40,60],[70,90],[90,110],[110,130]]);}
+  const pr=primesIn(a,b);
+  const steps=[pickStep(`Atzīmē VISUS pirmskaitļus no ${a} līdz ${b}!`,rangeArr(a,b),pr,
+    `Pāra skaitļi (izņemot 2) nav pirmskaitļi. Skaitļi, kas beidzas ar 5 vai 0, — arī nē (izņemot 5). Pārbaudi ciparu summu (dalās ar 3?) un dalīšanu ar 7.`,
+    `Pirmskaitļi no ${a} līdz ${b}: ${pr.join(', ')} (${pr.length} gab.)`)];
+  steps.push(mcStep(`Kā sauc pārējos skaitļus${a===1?' (izņemot 1)':''}?`,'salikti skaitļi',['pāra skaitļi','dalītāji'],{explain:'Skaitļus, kuriem ir vairāk nekā divi dalītāji, sauc par saliktiem skaitļiem.'+(a===1?' 1 nav ne pirmskaitlis, ne salikts skaitlis.':''),hint:'Pirmskaitlis — tieši 2 dalītāji. Ja dalītāju ir vairāk…',after:null}));
+  return{kind:'fac',title:'Atrodi pirmskaitļus',head:`${a} … ${b}`,story:null,steps};
+}
+function facDivs(l,N){
+  if(N==null)N=pick(l===0?[12,15,16,18,20]:l===1?[24,26,28,30,36,38]:[36,40,42,45,48]);
+  const ds=divisors(N);
+  const steps=[pickStep(`Atzīmē VISUS skaitļa ${N} dalītājus!`,rangeArr(1,N),ds,
+    `Dalītāji nāk pāros: 1 · ${N}, 2 · ${N/2|0}… Pārbaudi pēc kārtas 1, 2, 3, 4… — vai ${N} dalās bez atlikuma? Neaizmirsti 1 un pašu ${N}!`,
+    `${N} dalītāji: ${ds.join(', ')}`,{grid:N>30?8:6})];
+  steps.push({t:'num',q:`Cik dalītāju ir skaitlim ${N}?`,ans:ds.length,hint:`Saskaiti: ${ds.join(', ')}.`,after:`${N} ir ${ds.length} dalītāji`,test:1});
+  return{kind:'fac',title:'Dalītāji',head:`${N}: dalītāji?`,story:null,steps};
+}
+function facMostDivs(l,nums){
+  nums=nums||shuffle(pick([[26,38,36,24],[20,21,22,23],[30,32,34,35],[18,25,28,29],[40,42,44,45]]));
+  const cnt=nums.map(n=>divisors(n).length),mx=Math.max(...cnt),win=nums[cnt.indexOf(mx)];
+  const steps=nums.map(n=>({t:'num',q:`Cik dalītāju ir skaitlim ${n}?`,ans:divisors(n).length,hint:`Izraksti pa pāriem: ${divisors(n).filter(d=>d*d<=n).map(d=>d+' · '+n/d).join(', ')}.`,after:`${n}: ${divisors(n).join(', ')} → ${divisors(n).length}`}));
+  steps.push(mcStep(`Kuram skaitlim ir visvairāk dalītāju?`,String(win),nums.filter(n=>n!==win).map(String),{fixed:nums.map(String),explain:`${win} — ${mx} dalītāji.`,hint:'Salīdzini, cik dalītāju saskaitīji katram.',after:`Visvairāk dalītāju: ${win} (${mx})`,test:1}));
+  return{kind:'fac',title:'Kuram visvairāk dalītāju?',head:nums.join('; '),story:null,steps};
+}
+const TF_FIX=[
+  ['Starp skaitļiem 40 un 50 ir četri pirmskaitļi.',false,'Tie ir 41, 43, 47 — tikai trīs.'],
+  ['Starp 30 un 40 ir vairāk pirmskaitļu nekā starp 50 un 60.',false,'31, 37 un 53, 59 — abos pa diviem, vienādi.'],
+  ['Eksistē vismaz divi divciparu pirmskaitļi, kuru ciparu summa ir 5.',true,'23 un 41 (2 + 3 = 5, 4 + 1 = 5).'],
+  ['Eksistē pirmskaitlis, kurš dalās ar 17.',true,'Pats 17 dalās ar 17!'],
+  ['Starp skaitļiem 50 un 55 nav pirmskaitļu.',false,'53 ir pirmskaitlis.'],
+  ['103 ir mazākais trīsciparu pirmskaitlis.',false,'Mazākais ir 101.'],
+  ['Nav tāda divciparu pirmskaitļa, kura ciparu summa ir 12.',true,'Ja ciparu summa ir 12, skaitlis dalās ar 3 (39, 48, 57, 66, 75, 84, 93).'],
+  ['Ir trīs divciparu pirmskaitļi, kuru pirmais cipars ir 7.',true,'71, 73, 79.'],
+  ['Divciparu skaitļu virknē var atrast divus pirmskaitļus vienu otram blakus.',false,'No diviem blakus skaitļiem viens vienmēr ir pāra skaitlis (dalās ar 2). Blakus pirmskaitļi ir tikai 2 un 3.'],
+  ['Divciparu skaitļu virknē var atrast divus saliktus skaitļus vienu otram blakus.',true,'Piemēram, 24 un 25, 32 un 33, 90 un 91.'],
+  ['Visi pirmskaitļi ir nepāra skaitļi.',false,'2 ir pāra pirmskaitlis.'],
+  ['1 ir pirmskaitlis.',false,'1 ir tikai viens dalītājs — tas nav ne pirmskaitlis, ne salikts skaitlis.'],
+  ['51 ir pirmskaitlis.',false,'51 = 3 · 17 (ciparu summa 6 dalās ar 3).'],
+  ['91 ir pirmskaitlis.',false,'91 = 7 · 13.']];
+function tfGen(){const a=rnd(2,9)*10,b=a+10,n=primesIn(a,b).length,k=Math.random()<.5?n:n+pick([-1,1]);
+  return [`Starp skaitļiem ${a} un ${b} ir ${k} pirmskaitļi.`,k===n,`Tie ir ${primesIn(a,b).join(', ')||'neviens'} — ${n}.`];}
+function facTF(l,fix){
+  const items=fix||shuffle([...shuffle(TF_FIX).slice(0,2),tfGen()]);
+  const steps=items.map(([s,v,why])=>mcStep(s,v?'patiess':'aplams',[],{fixed:['patiess','aplams'],explain:why,hint:'Izraksti pirmskaitļus no 1 līdz 100 un pārbaudi.',after:`${v?'✓ Patiess':'✗ Aplams'}: ${why}`,test:1}));
+  return{kind:'fac',title:'Patiess vai aplams? Pamato!',head:'Patiess vai aplams?',story:null,steps};
+}
+function facProd(l,N){
+  if(N==null)N=pick(l===0?[12,18,24,20]:l===1?[24,36,54,40]:[54,72,96,108]);
+  const pf=pfList(N),steps=[];
+  const words=['divu','triju','četru','piecu','sešu'];
+  for(let k=2;k<=Math.min(pf.length,5);k++){
+    const known=pf.slice(0,k-1),rest=N/known.reduce((a,b)=>a*b,1);
+    steps.push({t:'num',q:`${words[k-2][0].toUpperCase()+words[k-2].slice(1)} skaitļu reizinājums: ${N} = ${known.join(' · ')} · ?`,ans:rest,hint:`Izrēķini ${N} : ${known.reduce((a,b)=>a*b,1)}.`,after:`${N} = ${known.join(' · ')} · ${rest}`,test:k===Math.min(pf.length,5)?1:0});}
+  if(pf.length<5&&N<100)steps.push(mcStep(`Vai ${N} var uzrakstīt kā ${words[pf.length-1]} reizinātāju reizinājumu, ja neviens reizinātājs nav 1?`,'nē',[],{fixed:['jā','nē'],explain:`${N} = ${pf.join(' · ')} — tikai ${pf.length} pirmreizinātāji, vairāk sadalīt nevar.`,hint:'Cik pirmreizinātāju ir šim skaitlim?',after:null}));
+  return{kind:'fac',title:'Uzraksti kā reizinājumu',head:`${N} = ? · ? · …`,story:null,steps};
+}
+function facTree(l,N,a){
+  if(N==null){[N,a]=pick(l===0?[[60,6],[84,12],[90,9],[100,10]]:l===1?[[140,14],[117,13],[126,14],[150,15],[132,12]]:[[210,14],[234,18],[360,36],[198,22],[330,15]]);}
+  const b=N/a,steps=[{t:'num',q:`${N} = ${a} · ?`,ans:b,hint:`Izrēķini ${N} : ${a}.`,after:`${N} = ${a} · ${b}`}];
+  [a,b].forEach(x=>{if(isPrime(x))steps.push(mcStep(`Vai ${x} vēl var sadalīt?`,'nē — tas ir pirmskaitlis',['jā'],{fixed:['jā','nē — tas ir pirmskaitlis'],explain:`${x} ir pirmskaitlis — zariņš beidzas.`,hint:`Vai ${x} dalās ar 2, 3, 5, 7?`,after:`${x} — pirmskaitlis`}));
+    else{const p=minPF(x);steps.push({t:'num',q:`${x} = ${p} · ?`,ans:x/p,hint:`Izrēķini ${x} : ${p}.`,after:`${x} = ${p} · ${x/p}`});
+      let y=x/p;while(!isPrime(y)){const q=minPF(y);steps.push({t:'num',q:`${y} = ${q} · ?`,ans:y/q,hint:`Izrēķini ${y} : ${q}.`,after:`${y} = ${q} · ${y/q}`});y/=q;}}});
+  const res=pfPow(N),wr=new Set([`${a} · ${b}`,pfList(N).map((p,i,A)=>i===A.length-1?p+1:p).join(' · ')]);wr.delete(res);
+  steps.push(mcStep(`Tātad ${N} sadalījums pirmreizinātājos ir…`,res,[...wr],{explain:`Koka „lapās” ir ${pfList(N).join(', ')}.`,hint:'Ņem tikai pirmskaitļus koka apakšā.',after:`${N} = ${pfList(N).join(' · ')} = ${res}`,test:1}));
+  return{kind:'fac',title:'Pabeidz reizinātāju koku',head:`${N} = ${a} · ?`,story:null,steps};
+}
+function facPickFix(q,nums,correct,hint,after,head,title){return{kind:'fac',title:title||'Atzīmē pareizos',head,story:null,steps:[pickStep(q,nums,correct,hint,after)]};}
+function facPrimeN(N){const pr=isPrime(N);return{kind:'fac',title:'Pirmskaitlis vai salikts skaitlis? Pamato!',head:String(N),story:null,steps:[
+  mcStep(`Vai ${N} ir pirmskaitlis?`,pr?'jā, pirmskaitlis':'nē, salikts skaitlis',[],{fixed:['jā, pirmskaitlis','nē, salikts skaitlis'],
+    explain:pr?`${N} nedalās ne ar 2, 3, 5, 7${N>121?', 11':''} — dalās tikai ar 1 un ${N}.`:`${N} = ${minPF(N)} · ${N/minPF(N)}${N%2===0?' (pāra skaitlis)':N%5===0?' (beidzas ar 0 vai 5)':N%3===0?' (ciparu summa dalās ar 3)':''}.`,
+    hint:DIVHINT,after:pr?`${N} — pirmskaitlis`:`${N} = ${minPF(N)} · ${N/minPF(N)} — salikts`,test:1})]};}
+function genFac(l){return pick(l===0?[facPrime,facPrime,facPairs,facColumn,facPickPrimes,facDivs,facProd,facTree]:l===1?[facPrime,facPairs,facColumn,facColumn,facPickPrimes,facDivs,facMostDivs,facTF,facProd,facTree]:[facPrime,facColumn,facColumn,facPickPrimes,facDivs,facMostDivs,facTF,facTF,facProd,facTree,powFact])(l);}
 
 function runPow(sp,host,mode,done){
   const free=mode==='free';
@@ -906,6 +1016,8 @@ function runPow(sp,host,mode,done){
     const q=free&&s.qFree?s.qFree:s.q;
     if(s.t==='num'){area.appendChild(el('div','q',q));
       numInput(area,s.ans,mode,s.hint,r=>{if(!r.ok)ok=0;mistakes+=r.mistakes||0;finish();});}
+    else if(s.t==='pick'){area.appendChild(el('div','q',q));
+      pickInput(area,s,free,r=>{if(!r.ok)ok=0;mistakes+=r.mistakes||0;finish();});}
     else mc(area,q,s.opts,s.correct,free,
       fb=>{fb.style.display='';fb.className='hint err';
         if(free){ok=0;fb.textContent='✗ Pareizi: '+s.opts[s.correct];finish();}
@@ -974,7 +1086,11 @@ fac:`<ul>
 <li><b>Dalāmības pazīmes:</b> ar 2 — pāra skaitlis; ar 3 — ciparu summa dalās ar 3 (51: 5 + 1 = 6 → dalās!); ar 5 — beidzas ar 0 vai 5; ar 10 — beidzas ar 0.</li>
 <li><b>Sadalīt pirmreizinātājos</b> = reizinājums, kurā <b>visi reizinātāji ir pirmskaitļi</b>. Tas ir tikai viens (secība nav svarīga).</li>
 <li><b>Stabiņā:</b> pa kreisi raksti skaitli, pa labi — mazāko pirmskaitli, ar ko tas dalās. Dalījumu raksti zem. Turpini, līdz kreisajā pusē ir 1.<br>
-<span style="font-family:monospace">84 | 2<br>42 | 2<br>21 | 3<br>&nbsp;7 | 7<br>&nbsp;1 |</span><br>84 = 2 · 2 · 3 · 7 = 2<sup>2</sup> · 3 · 7</li></ul>
+<span style="font-family:monospace">84 | 2<br>42 | 2<br>21 | 3<br>&nbsp;7 | 7<br>&nbsp;1 |</span><br>84 = 2 · 2 · 3 · 7 = 2<sup>2</sup> · 3 · 7</li>
+<li><b>Reizinātāju koks:</b> skaitli sadala jebkuros divos reizinātājos, tad katru zariņu dala tālāk, līdz apakšā paliek tikai pirmskaitļi: 140 = 14 · 10 → 14 = 2 · 7, 10 = 2 · 5 → 140 = 2<sup>2</sup> · 5 · 7.</li>
+<li><b>Dalītāji</b> nāk pāros: 24 = 1 · 24 = 2 · 12 = 3 · 8 = 4 · 6 → dalītāji 1, 2, 3, 4, 6, 8, 12, 24 (8 gab.). Neaizmirsti 1 un pašu skaitli!</li>
+<li>Pirmskaitļi līdz 100: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97.</li>
+<li>No diviem <b>blakus</b> skaitļiem viens vienmēr ir pāra skaitlis — tāpēc divi pirmskaitļi blakus ir tikai 2 un 3.</li></ul>
 <p>🌲 <b>Dzīvē:</b> 24 stādus var sastādīt 2 rindās pa 12, 3 rindās pa 8 vai 4 rindās pa 6 — tie ir 24 sadalījumi reizinātājos. Bet 23 stādus vienādās rindās (vairāk par vienu) nevar — 23 ir pirmskaitlis!</p>`};
 
 const TOPICS={
@@ -1017,7 +1133,20 @@ const SCHOOL=[
   ['k7',()=>orderSpec('2² + 6 · 146 − 76','kāpināšanu',[['2² = ?',4,'= 4 + 6 · 146 − 76'],['6 · 146 = ?',876,'= 4 + 876 − 76'],['4 + 876 = ?',880,'= 880 − 76'],['880 − 76 = ?',804,'= 804']],'Bez iekavām: 2², tad reizināšana, tad + un −.'),'66. bez iekavām'],
   ['k8',()=>orderSpec('(2² + 6) · 146 − 76','darbību iekavās',[['2² = ?',4,'= (4 + 6) · 146 − 76'],['4 + 6 = ?',10,'= 10 · 146 − 76'],['10 · 146 = ?',1460,'= 1460 − 76'],['1460 − 76 = ?',1384,'= 1384']],'Iekavas pirmās, iekavās vispirms 2².'),'66. 1. piemērs'],
   ['k9',()=>orderSpec('2² + 6 · (146 − 76)','darbību iekavās',[['146 − 76 = ?',70,'= 2² + 6 · 70'],['2² = ?',4,'= 4 + 6 · 70'],['6 · 70 = ?',420,'= 4 + 420'],['4 + 420 = ?',424,'= 424']],'Iekavas pirmās, tad 2², tad reizināšana, beigās saskaitīšana.'),'66. 2. piemērs'],
-  ['k10',()=>orderSpec('(2² + 6) · (146 − 76)','darbību iekavās',[['2² = ?',4,'= (4 + 6) · (146 − 76)'],['4 + 6 = ?',10,'= 10 · (146 − 76)'],['146 − 76 = ?',70,'= 10 · 70'],['10 · 70 = ?',700,'= 700']],'Abas iekavas pirmās, tad reizina.'),'66. 3. piemērs']]}];
+  ['k10',()=>orderSpec('(2² + 6) · (146 − 76)','darbību iekavās',[['2² = ?',4,'= (4 + 6) · (146 − 76)'],['4 + 6 = ?',10,'= 10 · (146 − 76)'],['146 − 76 = ?',70,'= 10 · 70'],['10 · 70 = ?',700,'= 700']],'Abas iekavas pirmās, tad reizina.'),'66. 3. piemērs']]},
+ {grp:'Pirmreizinātāji — stundas lapa',items:[
+  ['p0a',()=>facProd(0,24),'ievads: 24'],['p0b',()=>facProd(0,18),'ievads: 18'],['p0c',()=>facProd(0,15),'ievads: 15'],['p0d',()=>facProd(0,54),'ievads: 54'],
+  ['p1',()=>facPickFix('Atzīmē visus viencipara pirmskaitļus!',rangeArr(1,9),[2,3,5,7],'Pirmskaitlim ir tieši divi dalītāji. 1 nav pirmskaitlis!','Viencipara pirmskaitļi: 2, 3, 5, 7','1 … 9','Viencipara pirmskaitļi'),'1. uzd.'],
+  ...[17,310,51,71,97,243].map((n,i)=>['p2'+'abcdef'[i],()=>facPrimeN(n),'2. '+'abcdef'[i]+')']),
+  ['p3',()=>facPickPrimes(0,15,30),'3. uzd.'],
+  ['p4',()=>facPickFix('Atzīmē piecus pirmskaitļus, kas lielāki nekā 40, bet mazāki nekā 60!',rangeArr(41,59),[41,43,47,53,59],'Izsvītro pāra skaitļus un tos, kas beidzas ar 5. Pārbaudi ciparu summu (dalās ar 3?) un 7.','41, 43, 47, 53, 59 — tieši pieci!','40 < ? < 60','Pirmskaitļi starp 40 un 60'),'4. uzd.'],
+  ['p5',()=>facTF(0,TF_FIX.slice(8,10)),'5. uzd.'],
+  ['p6',()=>facPickFix('Atzīmē visus SALIKTOS divciparu skaitļus, kas beidzas ar 3!',[13,23,33,43,53,63,73,83,93],[33,63,93],'Pārbaudi ciparu summu: ja tā dalās ar 3, skaitlis dalās ar 3. Vēl pārbaudi 7 un 11.','33 = 3 · 11, 63 = 7 · 9, 93 = 3 · 31; pārējie ir pirmskaitļi','…3','Saliktie skaitļi, kas beidzas ar 3'),'6. uzd.'],
+  ['p7',()=>facMostDivs(1,[26,38,36,24]),'7. uzd.'],
+  ['p8a',()=>facColumnN(322),'8. a)'],['p8b',()=>facColumnN(2025),'8. b)'],['p8c',()=>facColumnN(2026),'8. c)'],['p8d',()=>facColumnN(361),'8. d)'],['p8e',()=>facColumnN(1024),'8. e)'],
+  ['pt1',()=>facTree(0,140,14),'koks: 140'],['pt2',()=>facTree(0,117,13),'koks: 117'],
+  ['pg5',()=>facTF(0,TF_FIX.slice(0,4)),'MG 124. lpp. 6. a–d'],['pg6',()=>facTF(0,TF_FIX.slice(4,8)),'MG 124. lpp. 6. e–h'],
+  ['pg1',()=>facPickPrimes(1,20,35),'MG 124. lpp. 5. a)'],['pg2',()=>facPickPrimes(1,40,60),'MG 124. lpp. 5. b)'],['pg3',()=>facPickPrimes(2,90,100),'MG 124. lpp. 5. c)']]}];
 const specLabel=sp=>sp.kind==='mul'?`${sp.a} · ${sp.b}`:sp.kind==='div'?`${sp.D} : ${sp.q}`:sp.kind==='unk'?unkEq(sp):(sp.kind==='pow'||sp.kind==='fac')?sp.head.replace(' = ?',''):sp.text;
 const topicOf=sp=>sp.kind;
 
@@ -1047,6 +1176,9 @@ function viewHome(){
   const pt=el('button','tile');const lp=store.get('powTests',[]).slice(-1)[0];
   pt.innerHTML=`<div class="ico">🚀</div><div class="t">Kāpināšana: formatīvais darbs</div><div class="s">10 uzdevumi bez padomiem${lp?` · pēdējais: ${lp.pts}/10`:''}</div>`;
   pt.onclick=viewPowTest;tiles.appendChild(pt);
+  const ft=el('button','tile');const lf=store.get('facTests',[]).slice(-1)[0];
+  ft.innerHTML=`<div class="ico">🧩</div><div class="t">Pirmreizinātāji: pārbaudes darbs</div><div class="s">10 uzdevumi bez padomiem${lf?` · pēdējais: ${lf.pts}/10`:''}</div>`;
+  ft.onclick=viewFacTest;tiles.appendChild(ft);
   main.appendChild(tiles);
 }
 
@@ -1063,7 +1195,8 @@ function viewHelp(){
 <li><b>🏫 Skolas uzdevumi</b> — tieši tie uzdevumi, kas bija tavā pārbaudes darbā un gatavošanās lapā.</li>
 <li><b>📝 Pārbaudes darbs</b> — pamēģini, kā tev sanāk bez palīdzības.</li>
 <li><b>🚀 Kāpināšana</b> — pakāpes, kvadrāti, kubi, darbību secība. Kad jūties droša, pamēģini <b>🚀 Kāpināšana: formatīvais darbs</b>.</li>
-<li><b>🧩 Reizinātāji un pirmreizinātāji</b> — pirmskaitļi, skaitlis kā reizinājums dažādos veidos, sadalīšana pirmreizinātājos stabiņā.</li>
+<li><b>🧩 Reizinātāji un pirmreizinātāji</b> — pirmskaitļi, dalītāji, „patiess vai aplams”, skaitlis kā reizinājums, reizinātāju koks, sadalīšana pirmreizinātājos stabiņā. Stundas lapas uzdevumi ir sadaļā <b>🏫 Skolas uzdevumi</b>, bet sevi pārbaudīt var <b>🧩 Pirmreizinātāji: pārbaudes darbs</b>.</li>
+<li>Kur jāatzīmē vairāki skaitļi, <b>spied uz tiem</b> (kļūst zili) un tad „Pārbaudīt”.</li>
 </ul>
 <h2>2. Kā rakstīt ciparus</h2>
 <ul>
@@ -1187,35 +1320,46 @@ function viewTest(){
 }
 
 function viewPowTest(){
+  viewMiniTest('Kāpināšana: formatīvais darbs','powTests',
+    [powWrite(0),powWrite(1),powCalc(0),powCalc(1),powCalc(2),powOrder(1),powOrder(1),powOrder(2),powCmp(),powExp(1)],
+    [['Pierakstu reizinājumu kā pakāpi',[0,1]],['Aprēķinu pakāpes vērtību',[2,3,4]],['Ievēroju darbību secību',[5,6,7]],['Salīdzinu pakāpes un atrodu nezināmo',[8,9]]],
+    'Gatavojamies formatīvajam darbam par kāpināšanu: <b>10 uzdevumi, 10 punkti</b>. Padomu nav, katrai atbildei viens mēģinājums. Ja aizmirsti likumu — vispirms paskaties <b>🚀 Kāpināšana → 📖 Kā to dara?</b>');
+}
+function viewFacTest(){
+  viewMiniTest('Pirmreizinātāji: pārbaudes darbs','facTests',
+    [facPrime(1),facPrime(2),facPickPrimes(1),facTF(1,[pick(TF_FIX)]),facDivs(1),facMostDivs(),facProd(1),facTree(1),facColumn(1),facColumn(2)],
+    [['Atšķiru pirmskaitļus un saliktus skaitļus',[0,1,2,3]],['Atrodu skaitļa dalītājus',[4,5]],['Uzrakstu skaitli kā reizinājumu',[6,7]],['Sadalu pirmreizinātājos',[8,9]]],
+    'Tāpat kā stundas lapā: <b>10 uzdevumi, 10 punkti</b> — pirmskaitļi, dalītāji, reizinātāju koks, sadalīšana stabiņā. Padomu nav, katrai atbildei viens mēģinājums. Ja aizmirsti — vispirms <b>🧩 → 📖 Kā to dara?</b>');
+}
+function viewMiniTest(title,key,specs,groups,introHTML){
   KEYS.h=null;main.innerHTML='';window.scrollTo(0,0);
-  topbar('Kāpināšana: formatīvais darbs');
+  topbar(title);
   const host=el('div');main.appendChild(host);
-  const specs=[powWrite(0),powWrite(1),powCalc(0),powCalc(1),powCalc(2),powOrder(1),powOrder(1),powOrder(2),powCmp(),powExp(1)];
-  const groups=[['Pierakstu reizinājumu kā pakāpi',[0,1]],['Aprēķinu pakāpes vērtību',[2,3,4]],['Ievēroju darbību secību',[5,6,7]],['Salīdzinu pakāpes un atrodu nezināmo',[8,9]]];
+  const N=specs.length;
   const kept=specs.map(s=>JSON.parse(JSON.stringify(s)));
   const results=[];let i=0;
-  const intro=el('div','hero');intro.innerHTML='Gatavojamies formatīvajam darbam par kāpināšanu: <b>10 uzdevumi, 10 punkti</b>. Padomu nav, katrai atbildei viens mēģinājums. Ja aizmirsti likumu — vispirms paskaties <b>🚀 Kāpināšana → 📖 Kā to dara?</b>';
+  const intro=el('div','hero');intro.innerHTML=introHTML;
   host.appendChild(intro);host.appendChild(btn('Sākt ▶','primary',run));
   function run(){
     host.innerHTML='';window.scrollTo(0,0);
-    host.appendChild(el('div','progress',`Uzdevums ${i+1} no ${specs.length}`));
+    host.appendChild(el('div','progress',`Uzdevums ${i+1} no ${N}`));
     runSpec(specs[i],host,'free',r=>{results[i]=r.pow?1:0;
-      host.appendChild(btn(i<specs.length-1?'Tālāk →':'Rādīt rezultātu','primary',()=>{i++;i<specs.length?run():summary();}));});
+      host.appendChild(btn(i<N-1?'Tālāk →':'Rādīt rezultātu','primary',()=>{i++;i<N?run():summary();}));});
   }
   function summary(){
     host.innerHTML='';window.scrollTo(0,0);
-    const pts=results.reduce((a,b)=>a+b,0),pct=pts*10;
-    const hist=store.get('powTests',[]);hist.push({date:new Date().toLocaleDateString('lv-LV'),pts});store.set('powTests',hist);
+    const pts=results.reduce((a,b)=>a+b,0),pct=Math.round(pts/N*100);
+    const hist=store.get(key,[]);hist.push({date:new Date().toLocaleDateString('lv-LV'),pts});store.set(key,hist);
     addStars(pts,true);if(pct>=70)confetti(40);
     const tag=(p,m)=>p===m?'<span class="tag g">Protu</span>':p*2>=m?'<span class="tag y">Protu daļēji</span>':'<span class="tag r">Vēl jāmācās</span>';
-    const b=el('div','done-banner');b.innerHTML=`<div class="big">${pts} / 10</div><div><b>${pct}%</b></div>`;host.appendChild(b);
+    const b=el('div','done-banner');b.innerHTML=`<div class="big">${pts} / ${N}</div><div><b>${pct}%</b></div>`;host.appendChild(b);
     const t=el('table','res');
     t.innerHTML='<tr><th>Prasme</th><th>Punkti</th><th></th></tr>'+groups.map(([n,ix],k)=>{const p=ix.reduce((a,j)=>a+results[j],0);return `<tr><td>${k+1}. ${n}</td><td class="c">${p}/${ix.length}</td><td>${tag(p,ix.length)}</td></tr>`;}).join('');
     host.appendChild(t);
     const wrong=kept.filter((s,j)=>!results[j]);
     if(wrong.length){host.appendChild(el('p','',`Kļūdas bija ${wrong.length} uzdevumos. Izrisini tos vēlreiz soli pa solim!`));
       host.appendChild(btn('🦉 Mācīties kļūdas soli pa solim','primary',()=>viewPractice(null,wrong,{back:viewHome})));}
-    else host.appendChild(el('p','','Visi uzdevumi pareizi — formatīvajam darbam esi gatava! 🎉'));
+    else host.appendChild(el('p','','Visi uzdevumi pareizi — esi gatava! 🎉'));
     host.appendChild(document.createTextNode(' '));host.appendChild(btn('Uz sākumu','',viewHome));
   }
 }
